@@ -23,6 +23,7 @@ function uiContext(file, cfg = {}, extra = {}) {
     if (!elements.has(id)) {
       const classes = new Set();
       elements.set(id, { value: '', checked: false, disabled: false, readOnly: false, style: { setProperty() {} },
+        attributes: {}, setAttribute(n, v) { this.attributes[n] = String(v); }, getAttribute(n) { return this.attributes[n]; },
         classList: { add: (...a) => a.forEach(v => classes.add(v)), remove: (...a) => a.forEach(v => classes.delete(v)), contains: v => classes.has(v) },
         focus() {}, setSelectionRange() {}, events: {}, addEventListener(n, f) { this.events[n] = f; } });
     }
@@ -31,7 +32,7 @@ function uiContext(file, cfg = {}, extra = {}) {
   const c = configContext({
     setTimeout(f, delay) { const id = ++nextTimer; timers.set(id, { f, delay }); return id; },
     clearTimeout(id) { timers.delete(id); },
-    document: { hidden: false, getElementById: element, querySelectorAll: () => [],
+    document: { hidden: false, documentElement: element('root'), getElementById: element, querySelectorAll: () => [],
       addEventListener(n, f) { documentEvents[n] = f; } },
     window: { focus() {}, addEventListener(n, f) { windowEvents[n] = f; } },
     overwolf: { windows: { onMessageReceived: { addListener(f) { ipc = f; } },
@@ -357,6 +358,112 @@ test('Desktop titlebar minimize and close buttons call overwolf.windows methods'
 
   d.element('btnWindowClose').events.click();
   assert.equal(closed, true);
+});
+
+test('Desktop appearance changes stay unsaved until Save and reverting clears dirty state', () => {
+  const d = uiContext('quicktype-overlay/desktop.js');
+  assert.equal(d.element('btn-save').disabled, true);
+  d.element('overlayOpacity').value = '65';
+  d.element('overlayOpacity').events.input();
+  assert.equal(d.element('btn-save').disabled, false);
+  assert.equal(d.c.loadOverlayConfig().overlayOpacity, 90);
+  assert.match(d.element('overlayPreview').style.background, /0.65/);
+  d.element('overlayOpacity').value = '90';
+  d.element('overlayOpacity').events.input();
+  assert.equal(d.element('btn-save').disabled, true);
+  d.element('showHints').checked = false;
+  d.element('showHints').events.change();
+  assert.equal(d.element('previewHints').hidden, true);
+  d.element('btn-save').events.click();
+  assert.equal(d.c.loadOverlayConfig().showHints, false);
+  assert.equal(d.element('btn-save').disabled, true);
+});
+
+test('Desktop system theme follows OS changes independently of saved overlay appearance', () => {
+  let changed;
+  const media = { matches: false, addEventListener(name, fn) { changed = fn; } };
+  const d = uiContext('quicktype-overlay/desktop.js', {}, {
+    window: { matchMedia: () => media }
+  });
+  assert.equal(d.element('root').attributes['data-theme'], 'dark');
+  media.matches = true;
+  changed();
+  assert.equal(d.element('root').attributes['data-theme'], 'light');
+  d.element('appTheme').value = 'dark';
+  d.element('appTheme').events.change();
+  changed();
+  assert.equal(d.element('root').attributes['data-theme'], 'dark');
+  assert.equal(d.c.localStorage.getItem('quicktype_desktop_theme'), 'dark');
+  assert.equal(d.c.loadOverlayConfig().overlayBgColor, '#0e0e12');
+  assert.equal(d.element('btn-save').disabled, true);
+});
+
+test('Desktop invalid headers reveal their editor from the overlay tab and preserve saved settings', () => {
+  const d = uiContext('quicktype-overlay/desktop.js');
+  d.element('tab-overlay').events.click();
+  assert.equal(d.element('panel-connection').hidden, true);
+  d.element('headers').value = '{bad';
+  d.element('btn-save').events.click();
+  assert.equal(d.element('panel-connection').hidden, false);
+  assert.equal(d.element('tab-connection').attributes['aria-selected'], 'true');
+  assert.equal(d.element('requestDetails').open, true);
+  assert.match(d.element('save-indicator').textContent, /Ошибка в JSON/);
+  assert.doesNotThrow(() => JSON.parse(d.c.loadOverlayConfig().headers));
+});
+
+test('Desktop response details collapse on success and open on HTTP failure', async () => {
+  const d = uiContext('quicktype-overlay/desktop.js');
+  d.c.executeRestRequest = async () => ({ ok: true, status: 204, durationMs: 12, body: '' });
+  await d.element('btn-test-request').events.click();
+  assert.equal(d.element('testResultBox').open, false);
+  d.c.executeRestRequest = async () => ({ ok: false, status: 400, durationMs: 15, body: 'Bad request' });
+  await d.element('btn-test-request').events.click();
+  assert.equal(d.element('testResultBox').open, true);
+  assert.equal(d.element('resultBoxBody').textContent, 'Bad request');
+});
+
+test('Desktop service preset switches to TTSBard defaults and updates URL/method', () => {
+  const d = uiContext('quicktype-overlay/desktop.js');
+  assert.equal(d.element('serviceType').value, 'ttsbard');
+  d.element('serviceType').value = 'custom';
+  d.element('serviceType').events.change();
+  assert.equal(d.element('serviceType').value, 'custom');
+  d.element('apiUrl').value = 'https://custom.test/hook';
+  d.element('httpMethod').value = 'GET';
+  d.element('serviceType').value = 'ttsbard';
+  d.element('serviceType').events.change();
+  assert.equal(d.element('apiUrl').value, 'http://127.0.0.1:10101/v1/speech');
+  assert.equal(d.element('httpMethod').value, 'POST');
+});
+
+test('Desktop speech check reports service accepted text upon success', async () => {
+  const d = uiContext('quicktype-overlay/desktop.js');
+  d.c.executeRestRequest = async () => ({ ok: true, status: 200, durationMs: 42, body: '{"ok":true}' });
+  await d.element('btn-test-request').events.click();
+  assert.match(d.element('resultStatusText').textContent, /Сервис принял текст/);
+  assert.match(d.element('resultBoxTitle').textContent, /Сервис принял текст/);
+  assert.equal(d.element('resultBadge').textContent, 'HTTP 200');
+});
+
+test('Overlay default height is compact 100px and error defaults to retry prompt', () => {
+  const c = configContext();
+  assert.equal(c.DEFAULT_CONFIG.overlayHeight, 100);
+  const u = uiContext('quicktype-overlay/overlay.js');
+  u.element('inputText').value = 'speak';
+  u.key('Enter');
+  const reqId = u.messages.find(m => m[1] === 'submit_text')[2].requestId;
+  u.ipc({ id: 'rest_result', content: { ok: false, requestId: reqId } });
+  assert.equal(u.element('hudStatusBanner').textContent, 'Не удалось отправить. Enter — повторить');
+});
+
+test('Overlay shows sending feedback banner on delay greater than 800ms', () => {
+  const u = uiContext('quicktype-overlay/overlay.js');
+  u.element('inputText').value = 'speak';
+  u.key('Enter');
+  assert.equal(u.element('hudStatusBanner').style.display, 'none');
+  u.runTimers(800);
+  assert.equal(u.element('hudStatusBanner').style.display, 'flex');
+  assert.equal(u.element('hudStatusBanner').textContent, 'Отправка...');
 });
 
 

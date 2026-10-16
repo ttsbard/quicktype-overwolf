@@ -1,211 +1,275 @@
 <!doctype html>
-<html lang="ru">
-<head>
-  <meta charset="utf-8">
-  <title>QuickType — Настройки</title>
-  <link rel="stylesheet" href="desktop.css">
-</head>
-<body>
-  <!-- Системный заголовок окна с кнопками управления -->
-  <div class="window-titlebar" id="windowTitlebar">
-    <div class="window-title">
-      <svg class="window-icon" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M4 3h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4l-4 4-4-4H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v10h4l3 3 3-3h4V5H5z"/>
-      </svg>
-      <span>QuickType — Настройки</span>
-    </div>
-    <div class="window-controls">
-      <button type="button" class="window-control-btn" id="btnWindowMinimize" title="Свернуть" aria-label="Свернуть">
-        <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
-          <path d="M2 8a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 8z"/>
-        </svg>
-      </button>
-      <button type="button" class="window-control-btn close" id="btnWindowClose" title="Закрыть" aria-label="Закрыть">
-        <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
-          <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <div class="main-container">
-    <header class="app-hero">
-      <div class="brand-badge">
-        <svg class="brand-icon" viewBox="0 0 24 24" fill="currentColor">
+<html lang="ru" data-theme="dark">
+  <head>
+    <meta charset="utf-8">
+    <title>QuickType — Настройки</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="desktop.css">
+  </head>
+  <body>
+    <!-- Системный заголовок окна с кнопками управления -->
+    <div class="window-titlebar" id="windowTitlebar">
+      <div class="window-title">
+        <svg class="window-icon" viewBox="0 0 24 24" fill="currentColor">
           <path d="M4 3h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4l-4 4-4-4H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v10h4l3 3 3-3h4V5H5z"/>
         </svg>
+        <span>QuickType — Настройки</span>
       </div>
-      <div class="hero-text">
-        <h1 class="hero-title">QuickType</h1>
-        <p class="hero-subtitle">Конфигурация внутриигрового оверлея</p>
+      <div class="window-controls">
+        <button type="button" class="window-control-btn" id="btnWindowMinimize" title="Свернуть" aria-label="Свернуть">
+          <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
+            <path d="M2 8a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 8z"/>
+          </svg>
+        </button>
+        <button type="button" class="window-control-btn close" id="btnWindowClose" title="Закрыть" aria-label="Закрыть">
+          <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
+            <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/>
+          </svg>
+        </button>
       </div>
-    </header>
+    </div>
 
-    <!-- Сплошная монолитная панель настроек -->
-    <main class="settings-panel">
-
-      <!-- СЕКЦИЯ 1: Параметры REST API -->
-      <section class="settings-section">
-        <div class="section-header">
-          <span class="header-indicator purple"></span>
-          <h2 class="section-title">Параметры REST API</h2>
+    <div class="main-container">
+      <header class="app-hero">
+        <div class="brand-badge">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M4 3h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4l-4 4-4-4H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v10h4l3 3 3-3h4V5H5z"/>
+          </svg>
         </div>
-
-        <div class="form-group">
-          <label for="apiUrl">Эндпоинт (URL)</label>
-          <input type="text" id="apiUrl" class="form-input" placeholder="http://127.0.0.1:10101/v1/speech" spellcheck="false">
-          <span class="field-hint">Адрес, на который отправляется введённый текст</span>
+        <div class="hero-text">
+          <h1 class="hero-title">QuickType</h1>
+          <p class="hero-subtitle">Быстрый ввод поверх игры</p>
         </div>
+        <label class="app-theme-control" for="appTheme">Тема окна
+          <select id="appTheme" class="form-select" title="Тема окна применяется и сохраняется сразу">
+            <option value="system">Системная</option>
+            <option value="dark">Тёмная</option>
+            <option value="light">Светлая</option>
+          </select>
+        </label>
+      </header>
+      <nav class="settings-tabs" role="tablist" aria-label="Разделы настроек">
+        <button type="button" id="tab-connection" class="settings-tab" role="tab" aria-selected="true" aria-controls="panel-connection">Подключение</button>
+        <button type="button" id="tab-overlay" class="settings-tab" role="tab" aria-selected="false" aria-controls="panel-overlay" tabindex="-1">Оверлей</button>
+      </nav>
 
-        <div class="form-group">
-          <label for="httpMethod">HTTP Метод</label>
-          <div class="select-wrapper">
-            <select id="httpMethod" class="form-select">
-              <option value="POST">POST</option>
-              <option value="GET">GET</option>
-              <option value="PUT">PUT</option>
-            </select>
-          </div>
-        </div>
+      <!-- Содержимое активной вкладки прокручивается независимо от панели сохранения -->
+      <main class="settings-panel">
+        <div id="panel-connection" role="tabpanel" aria-labelledby="tab-connection">
 
-        <div class="form-group">
-          <label for="headers">HTTP Заголовки (JSON)</label>
-          <textarea id="headers" class="form-textarea code-font" rows="3" spellcheck="false"></textarea>
-          <span class="field-hint">JSON-объект заголовков (например, <code>Authorization</code>, <code>Content-Type</code>)</span>
-        </div>
-
-        <div class="form-group">
-          <label for="payloadTemplate">Шаблон тела запроса (Payload)</label>
-          <textarea id="payloadTemplate" class="form-textarea code-font" rows="3" spellcheck="false"></textarea>
-          <span class="field-hint">Плейсхолдер <code>{text}</code> заменится на текст из оверлея</span>
-        </div>
-      </section>
-
-      <hr class="section-divider">
-
-      <!-- СЕКЦИЯ 2: Тест отправки (блок перед окном оверлея) -->
-      <section class="settings-section">
-        <div class="section-header">
-          <span class="header-indicator purple"></span>
-          <h2 class="section-title">Тест отправки</h2>
-        </div>
-
-        <div class="test-row">
-          <input type="text" id="testInput" class="form-input test-field" value="Тестовая фраза для озвучки" spellcheck="false" placeholder="Текст для проверки...">
-          <button id="btn-test-request" class="btn btn-action" type="button">Отправить</button>
-        </div>
-
-        <div class="test-status-line">
-          <span id="resultBadge" class="badge">Готов к тесту</span>
-          <span id="resultStatusText" class="status-detail"></span>
-        </div>
-
-        <div id="testResultBox" class="test-result-box" style="display: none;">
-          <div class="result-box-header">
-            <span id="resultBoxTitle" class="result-box-title">Результат</span>
-            <div class="result-box-actions">
-              <span id="resultBoxMeta" class="result-box-meta"></span>
-              <button type="button" id="btn-close-result" class="btn-close-result" title="Закрыть ответ" aria-label="Закрыть ответ">
-                <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
-                  <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/>
-                </svg>
-              </button>
+          <!-- СЕКЦИЯ 1: Параметры сервиса -->
+          <section class="settings-section">
+            <div class="section-header">
+              <span class="header-indicator purple"></span>
+              <h2 class="section-title">Адрес сервиса</h2>
             </div>
-          </div>
-          <pre id="resultBoxBody" class="result-box-body code-font"></pre>
-        </div>
-      </section>
 
-      <hr class="section-divider">
-
-      <!-- СЕКЦИЯ 3: Внешний вид оверлея -->
-      <section class="settings-section">
-        <div class="section-header">
-          <span class="header-indicator cyan"></span>
-          <h2 class="section-title">Внешний вид оверлея</h2>
-        </div>
-
-        <!-- 1. Прозрачность фона -->
-        <div class="form-group">
-          <div class="range-header">
-            <label for="overlayOpacity">Прозрачность окна</label>
-            <span id="opacityValue" class="badge">90%</span>
-          </div>
-          <input type="range" id="overlayOpacity" class="form-range" min="20" max="100" step="5" value="90">
-          <span class="field-hint">Регулирует полупрозрачность фона оверлея поверх игры</span>
-        </div>
-
-        <!-- 2. Тема и цвет фона -->
-        <div class="form-group">
-          <label>Цвет фона и пресеты</label>
-          <div class="color-control-row">
-            <div class="color-picker-wrap">
-              <input type="color" id="overlayBgColor" class="color-picker-input" value="#0e0e12" title="Выбрать свой цвет фона">
+            <div class="form-group">
+              <label for="serviceType">Сервис озвучивания</label>
+              <select id="serviceType" class="form-select">
+                <option value="ttsbard">Локальный TTSBard</option>
+                <option value="custom">Другой сервис (REST / Webhook)</option>
+              </select>
             </div>
-            <div class="chips-group theme-chips">
-              <button type="button" class="chip-btn theme-chip" data-color="#0e0e12" data-opacity="90">Тёмный</button>
-              <button type="button" class="chip-btn theme-chip" data-color="#050508" data-opacity="95">OLED</button>
-              <button type="button" class="chip-btn theme-chip" data-color="#141424" data-opacity="75">Стекло</button>
-              <button type="button" class="chip-btn theme-chip" data-color="#2a2a38" data-opacity="90">Светло-серый</button>
+
+            <div class="form-group endpoint-group">
+              <label for="apiUrl">Адрес (URL)</label>
+              <input type="text" id="apiUrl" class="form-input" placeholder="http://127.0.0.1:10101/v1/speech" spellcheck="false">
+              <span id="serviceHint" class="field-hint">Используется локальный сервер TTSBard (по умолчанию http://127.0.0.1:10101/v1/speech).</span>
             </div>
-          </div>
+
+            <details id="requestDetails" class="disclosure">
+              <summary>Дополнительные параметры запроса</summary>
+              <div class="disclosure-content">
+                <div class="form-group method-group">
+                  <label for="httpMethod">HTTP Метод</label>
+                  <select id="httpMethod" class="form-select">
+                    <option value="POST">POST</option><option value="GET">GET</option><option value="PUT">PUT</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="headers">Заголовки (JSON)</label>
+                  <textarea id="headers" class="form-textarea code-font" rows="3" spellcheck="false"></textarea>
+                  <span class="field-hint">JSON-объект заголовков (например, <code>Authorization</code>, <code>Content-Type</code>)</span>
+                </div>
+
+                <div class="form-group">
+                  <label for="payloadTemplate">Шаблон тела запроса</label>
+                  <textarea id="payloadTemplate" class="form-textarea code-font" rows="3" spellcheck="false"></textarea>
+                  <span class="field-hint">Плейсхолдер <code>{text}</code> заменится на текст из оверлея</span>
+                </div>
+              </div>
+            </details>
+          </section>
+
+          <hr class="section-divider">
+
+          <!-- Проверка текущих параметров запроса -->
+          <section class="settings-section">
+            <div class="section-header">
+              <span class="header-indicator purple"></span>
+              <h2 class="section-title">Проверка озвучивания</h2>
+            </div>
+
+            <div class="test-row">
+              <input type="text" id="testInput" aria-label="Текст для проверки озвучивания" class="form-input test-field" value="Тестовая фраза для озвучки" spellcheck="false" placeholder="Текст для проверки...">
+              <button id="btn-test-request" class="btn btn-action" type="button">Озвучить</button>
+            </div>
+
+            <div class="test-status-line" role="status" aria-live="polite">
+              <span id="resultBadge" class="badge" style="display: none;">Готов к тесту</span>
+              <span id="resultStatusText" class="status-detail"></span>
+            </div>
+
+            <details id="testResultBox" class="test-result-box" style="display: none;">
+              <summary>Подробности ответа</summary>
+              <div class="response-content">
+                <div class="result-box-header">
+                  <span id="resultBoxTitle" class="result-box-title">Результат</span>
+                  <div class="result-box-actions">
+                    <span id="resultBoxMeta" class="result-box-meta"></span>
+                    <button type="button" id="btn-close-result" class="btn-close-result" title="Закрыть ответ" aria-label="Закрыть ответ">
+                      <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
+                        <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <pre id="resultBoxBody" class="result-box-body code-font"></pre>
+              </div>
+            </details>
+          </section>
+
+          <p class="field-hint connection-note">Проверка отправляет текст по текущим значениям формы. Для использования в игре сохраните настройки.</p>
         </div>
+        <div id="panel-overlay" role="tabpanel" aria-labelledby="tab-overlay" hidden>
+          <!-- СЕКЦИЯ 1 В ОВЕРЛЕЕ: Горячая клавиша и управление окном (поднято наверх) -->
+          <section class="settings-section window-section">
+            <div class="section-header">
+              <span class="header-indicator cyan"></span>
+              <h2 class="section-title">Горячая клавиша и окно</h2>
+            </div>
+            <p class="shortcut-row">Вызов оверлея <kbd id="overlayHotkey">См. настройки Overwolf</kbd></p>
+            <p class="field-hint">Горячая клавиша меняется в настройках Overwolf → Горячие клавиши (Hotkeys).</p>
+            <div class="reset-bounds-box">
+              <div class="reset-bounds-text">
+                <span class="reset-title">Положение и размер</span>
+                <span class="field-hint">Окно можно свободно перемещать за верхнюю полоску и растягивать за края в игре.</span>
+              </div>
+              <button type="button" id="btn-reset-bounds" class="btn btn-ghost btn-sm">Сбросить окно</button>
+            </div>
+          </section>
 
-        <!-- 3. Свободный Drag & Resize и сброс -->
-        <div class="reset-bounds-box">
-          <div class="reset-bounds-text">
-            <span class="reset-title">Положение и размер</span>
-            <span class="field-hint">Окно можно свободно двигать за верх и растягивать за угол в игре.</span>
-          </div>
-          <button type="button" id="btn-reset-bounds" class="btn btn-ghost btn-sm">Сбросить окно</button>
+          <!-- СЕКЦИЯ 2: Внешний вид оверлея -->
+          <section class="settings-section">
+            <div class="section-header">
+              <span class="header-indicator cyan"></span>
+              <h2 class="section-title">Внешний вид</h2>
+            </div>
+
+            <div class="preview-stage" aria-label="Предпросмотр оформления оверлея">
+              <div id="overlayPreview" class="overlay-preview">
+                <div class="preview-drag"></div>
+                <div class="preview-input">Текст для отправки…</div>
+                <div id="previewHints" class="preview-hints"><span><kbd>Enter</kbd> — Отправить</span><span><kbd>Esc</kbd> — Закрыть</span></div>
+              </div>
+              <span class="preview-caption">Предпросмотр оверлея</span>
+            </div>
+
+            <!-- 1. Непрозрачность фона -->
+            <div class="form-group">
+              <div class="range-header">
+                <label for="overlayOpacity">Непрозрачность фона</label>
+                <span id="opacityValue" class="badge">90%</span>
+              </div>
+              <input type="range" id="overlayOpacity" class="form-range" min="20" max="100" step="5" value="90">
+              <span class="field-hint">100% — непрозрачный. Рекомендуется 90–95% для высокой читаемости текста поверх игры.</span>
+            </div>
+
+            <!-- 2. Цвет фона -->
+            <div class="form-group">
+              <label for="overlayBgColor">Цвет фона</label>
+              <div class="color-control-row">
+                <div class="color-picker-wrap">
+                  <input type="color" id="overlayBgColor" class="color-picker-input" value="#0e0e12" title="Выбрать свой цвет фона">
+                </div>
+                <div class="chips-group theme-chips">
+                  <button type="button" class="chip-btn theme-chip" data-color="#0e0e12" data-opacity="90">Тёмный</button>
+                  <button type="button" class="chip-btn theme-chip" data-color="#050508" data-opacity="95">Чёрный</button>
+                  <button type="button" class="chip-btn theme-chip" data-color="#2a2a38" data-opacity="90">Графит</button>
+                  <button type="button" class="chip-btn theme-chip" data-color="#141424" data-opacity="75">Ночной</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Переключатели параметров -->
+            <div class="toggles-list appearance-toggles">
+              <label class="toggle-item">
+                <div class="toggle-text">
+                  <span class="toggle-label">Показывать подсказки клавиш</span>
+                  <span class="toggle-desc">Отображать подсказки Enter / Esc в нижней части оверлея</span>
+                </div>
+                <span class="switch">
+                  <input type="checkbox" id="showHints" checked>
+                  <span class="switch-slider"></span>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <!-- СЕКЦИЯ 3: Поведение -->
+          <section class="settings-section behavior-section">
+            <div class="section-header">
+              <span class="header-indicator cyan"></span>
+              <h2 class="section-title">Поведение</h2>
+            </div>
+            <div class="toggles-list">
+              <label class="toggle-item">
+                <div class="toggle-text">
+                  <span class="toggle-label">Закрывать после успешной отправки</span>
+                  <span class="toggle-desc">Окно автоматически скроется после отправки и вернёт управление игре</span>
+                </div>
+                <span class="switch">
+                  <input type="checkbox" id="closeOnSubmit" checked>
+                  <span class="switch-slider"></span>
+                </span>
+              </label>
+
+              <label class="toggle-item">
+                <div class="toggle-text">
+                  <span class="toggle-label">Очищать текст после успешной отправки</span>
+                  <span class="toggle-desc">Очищает поле. Если выключено, отправленный текст сохранится для повтора</span>
+                </div>
+                <span class="switch">
+                  <input type="checkbox" id="clearOnSubmit" checked>
+                  <span class="switch-slider"></span>
+                </span>
+              </label>
+
+              <label class="toggle-item">
+                <div class="toggle-text">
+                  <span class="toggle-label">Закрывать по Escape</span>
+                  <span class="toggle-desc">Скрывает окно по клавише Esc. Черновик набранного текста всегда сохраняется до следующего открытия</span>
+                </div>
+                <span class="switch">
+                  <input type="checkbox" id="closeOnEscape" checked>
+                  <span class="switch-slider"></span>
+                </span>
+              </label>
+            </div>
+          </section>
         </div>
-
-        <!-- Переключатели параметров -->
-        <div class="toggles-list">
-          <label class="toggle-item">
-            <span class="toggle-label">Показывать подсказки клавиш (Enter / Shift+Enter / Esc)</span>
-            <div class="switch">
-              <input type="checkbox" id="showHints" checked>
-              <span class="switch-slider"></span>
-            </div>
-          </label>
-
-          <label class="toggle-item">
-            <span class="toggle-label">Закрывать оверлей при успешной отправке</span>
-            <div class="switch">
-              <input type="checkbox" id="closeOnSubmit" checked>
-              <span class="switch-slider"></span>
-            </div>
-          </label>
-
-          <label class="toggle-item">
-            <span class="toggle-label">Очищать поле после успешной отправки</span>
-            <div class="switch">
-              <input type="checkbox" id="clearOnSubmit" checked>
-              <span class="switch-slider"></span>
-            </div>
-          </label>
-
-          <label class="toggle-item">
-            <span class="toggle-label">Закрывать оверлей по Escape</span>
-            <div class="switch">
-              <input type="checkbox" id="closeOnEscape" checked>
-              <span class="switch-slider"></span>
-            </div>
-          </label>
-        </div>
-      </section>
-
+      </main>
       <!-- Нижняя панель действий -->
       <footer class="bottom-actions">
-        <button id="btn-save" class="btn btn-primary" type="button">Сохранить</button>
-        <span id="save-indicator" class="save-toast"></span>
+        <div class="save-state"><span id="save-indicator" class="save-toast" role="status" aria-live="polite"></span><span id="dirty-indicator">Все изменения сохранены</span></div>
+        <button id="btn-save" class="btn btn-primary" type="button" disabled>Сохранить</button>
       </footer>
 
-    </main>
-  </div>
+    </div>
 
-  <script src="config.js"></script>
-  <script src="desktop.js"></script>
-</body>
+    <script src="config.js"></script>
+    <script src="desktop.js"></script>
+  </body>
 </html>

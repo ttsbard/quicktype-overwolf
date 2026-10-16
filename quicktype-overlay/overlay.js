@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var overlayVisible = true;
   var previewConfig = {};
   var statusTimeout = null;
+  var sendingDelayTimer = null;
   var saveBoundsTimer = null;
 
   function hexToRgba(hex, opacityPercent) {
@@ -54,8 +55,27 @@ document.addEventListener('DOMContentLoaded', function () {
       clearTimeout(statusTimeout);
       statusTimeout = null;
     }
+    if (sendingDelayTimer) {
+      clearTimeout(sendingDelayTimer);
+      sendingDelayTimer = null;
+    }
 
     if (!hudContainer || !hudStatusBanner) return;
+
+    if (type === 'sending') {
+      hudStatusBanner.style.display = 'none';
+      hudStatusBanner.textContent = '';
+      hudStatusBanner.className = 'hud-status-banner';
+      // Короткий статус только при задержке отправки
+      sendingDelayTimer = setTimeout(function () {
+        if (isSubmitting && overlayVisible) {
+          hudStatusBanner.className = 'hud-status-banner info';
+          hudStatusBanner.textContent = 'Отправка...';
+          hudStatusBanner.style.display = 'flex';
+        }
+      }, 800);
+      return;
+    }
 
     if (type !== 'error') {
       hudStatusBanner.style.display = 'none';
@@ -66,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Отображаем исключительно сообщение об ошибке (без цветных подсветок окна)
     hudStatusBanner.className = 'hud-status-banner error';
-    hudStatusBanner.textContent = text || 'Сбой отправки запроса';
+    hudStatusBanner.textContent = text || 'Не удалось отправить. Enter — повторить';
     hudStatusBanner.style.display = 'flex';
   }
 
@@ -92,6 +112,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Repeated focus messages must not reset pending requests or drafts.
     inputField.readOnly = isSubmitting;
     focusField();
+    autoAdjustHeight();
     [15, 45, 100, 200].forEach(function (delay) {
       setTimeout(function () { if (overlayVisible) focusField(); }, delay);
     });
@@ -100,6 +121,10 @@ document.addEventListener('DOMContentLoaded', function () {
   function dismissOverlay() {
     overlayVisible = false;
     if (activeRequest) clearTimeout(activeRequest.timer);
+    if (sendingDelayTimer) {
+      clearTimeout(sendingDelayTimer);
+      sendingDelayTimer = null;
+    }
     activeRequest = null;
     isSubmitting = false;
     inputField.readOnly = false;
@@ -249,12 +274,33 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function autoAdjustHeight() {
+    if (typeof overwolf === 'undefined' || !overwolf.windows || typeof overwolf.windows.changeSize !== 'function' || !inputField) return;
+    if (config.overlayBounds && typeof config.overlayBounds.height === 'number') return;
+    overwolf.windows.getCurrentWindow(function (res) {
+      if (!res || !res.success || !res.window) return;
+      var win = res.window;
+      var text = inputField.value || '';
+      var lines = text.split('\n').length;
+      if (text.length > 55) {
+        lines = Math.max(lines, Math.ceil(text.length / 48));
+      }
+      var targetHeight = 100;
+      if (lines > 1) {
+        targetHeight = Math.min(240, 100 + (lines - 1) * 26);
+      }
+      if (Math.abs(win.height - targetHeight) > 6) {
+        overwolf.windows.changeSize(win.id, win.width, targetHeight, function () {});
+      }
+    });
+  }
+
   function resetWindowBounds() {
-    if (typeof overwolf === 'undefined') return;
+    if (typeof overwolf === 'undefined' || !overwolf.windows || typeof overwolf.windows.changeSize !== 'function') return;
     overwolf.windows.getCurrentWindow(function (res) {
       if (res.success) {
         var defaultW = 640;
-        var defaultH = 180;
+        var defaultH = 100;
         overwolf.windows.changeSize(res.window.id, defaultW, defaultH, function () {
           overwolf.windows.changePosition(res.window.id, 100, 100, function () {
             config.overlayBounds = null;
@@ -272,7 +318,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var completed = activeRequest;
     clearTimeout(completed.timer);
     if (content.ok) {
-      if (completed.clear && inputField.value === completed.text) inputField.value = '';
+      if (completed.clear && inputField.value === completed.text) {
+        inputField.value = '';
+        autoAdjustHeight();
+      }
       statusTimeout = setTimeout(function () {
         if (activeRequest !== completed) return;
         setStatus('normal');
@@ -286,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function () {
       activeRequest = null;
       isSubmitting = false;
       inputField.readOnly = false;
-      setStatus('error', content.error || 'Сбой отправки запроса');
+      setStatus('error', content.error || 'Не удалось отправить. Enter — повторить');
       if (overlayVisible) focusField();
     }
   }
@@ -317,11 +366,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
-  // Сброс ошибки при начале редактирования текста
+  // Сброс ошибки и динамическое изменение высоты при редактировании текста
   inputField.addEventListener('input', function () {
     if (hudStatusBanner && hudStatusBanner.style.display !== 'none') {
       setStatus('normal');
     }
+    autoAdjustHeight();
   });
 
   // Первичная инициализация конфигурации и стилей

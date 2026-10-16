@@ -16,7 +16,7 @@ var DEFAULT_CONFIG = {
     text: '{text}'
   }, null, 2),
   overlayWidth: 640,
-  overlayHeight: 180,
+  overlayHeight: 100,
   overlayOpacity: 90,
   overlayBgColor: '#0e0e12',
   showHints: true,

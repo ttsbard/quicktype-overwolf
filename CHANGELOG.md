@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Two desktop settings tabs: Connection and Overlay, with keyboard navigation.
+- Service preset selector: «Локальный TTSBard» vs «Другой сервис (REST / Webhook)», keeping advanced HTTP method and payload details in a collapsible section.
+- In-window overlay appearance preview, selected preset indicators, and persistent save footer with unsaved-change status.
+- Explanatory descriptions for behavior toggles clarifying draft preservation on Esc and submit.
+- Dynamic auto-height for overlay when typing multiline messages.
+- Independent System / Dark / Light desktop themes; the theme applies immediately and is saved separately from overlay settings.
+
+### Changed
+- Overlay readability and focus: enlarged input text to 18px, improved contrast and opacity, simplified to a single clear focus frame, and streamlined placeholder to «Введите сообщение…».
+- Overlay initial height reduced to a compact 100px with calm window contour.
+- Streamlined footer shortcuts: «Enter — Отправить · Esc — Закрыть» with secondary newline hint.
+- Renamed test section to «Проверка озвучивания» with button «Озвучить» and accurate status «Сервис принял текст».
+- Overlay tab reordered to present hotkey and window controls at the top.
+- Delayed sending feedback banner shown only when network delay exceeds 800ms.
+
 ## [0.3.0] - 2026-10-11
 
 ### Added

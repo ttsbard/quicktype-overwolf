@@ -67,7 +67,7 @@
         "focus_game_takeover_release_hotkey": "toggle_input_form",
         "size": {
           "width": 640,
-          "height": 180
+          "height": 100
         },
         "min_size": {
           "width": 240,

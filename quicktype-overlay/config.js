@@ -89,6 +89,58 @@ function parseRequestHeaders(raw) {
   return headers;
 }
 
+// Portable connection files deliberately exclude overlay and window preferences.
+function parseConnectionProfile(raw) {
+  var profile;
+  try { profile = JSON.parse(raw.replace(/^\uFEFF/, '')); }
+  catch (_) { throw new Error('Некорректный JSON. Проверьте кавычки, запятые и скобки.'); }
+  if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+    throw new Error('Настройки подключения должны быть JSON-объектом.');
+  }
+  var fields = ['apiUrl', 'httpMethod', 'headers', 'payloadTemplate'];
+  Object.keys(profile).forEach(function (key) {
+    if (fields.indexOf(key) === -1) throw new Error('Неизвестное поле: ' + key);
+  });
+  if (typeof profile.apiUrl !== 'string' || !profile.apiUrl.trim()) {
+    throw new Error('Укажите apiUrl — адрес сервиса.');
+  }
+  var target;
+  try { target = new URL(profile.apiUrl.trim()); }
+  catch (_) { throw new Error('apiUrl должен содержать полный URL с http:// или https://.'); }
+  if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+    throw new Error('apiUrl должен использовать http или https.');
+  }
+  var method = profile.httpMethod === undefined ? 'POST' : profile.httpMethod;
+  if (typeof method !== 'string' || ['GET', 'POST', 'PUT'].indexOf(method.toUpperCase()) === -1) {
+    throw new Error('httpMethod: поддерживаются GET, POST и PUT.');
+  }
+  var headers = profile.headers === undefined ? JSON.parse(DEFAULT_CONFIG.headers) : profile.headers;
+  if (!headers || typeof headers !== 'object' || Array.isArray(headers)) {
+    throw new Error('headers должен быть объектом со строковыми значениями.');
+  }
+  var headersText = JSON.stringify(headers, null, 2);
+  parseRequestHeaders(headersText);
+  var payload = profile.payloadTemplate === undefined ? JSON.parse(DEFAULT_CONFIG.payloadTemplate) : profile.payloadTemplate;
+  if (typeof payload !== 'string' && (!payload || typeof payload !== 'object')) {
+    throw new Error('payloadTemplate должен быть JSON-объектом, массивом или строкой.');
+  }
+  return { apiUrl: profile.apiUrl.trim(), httpMethod: method.toUpperCase(), headers: headersText,
+    payloadTemplate: typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2) };
+}
+
+function exportConnectionProfile(config) {
+  var payload = config.payloadTemplate;
+  // Objects and arrays stay readable in exported files; raw text stays a string.
+  try {
+    var parsed = JSON.parse(payload);
+    if (parsed && typeof parsed === 'object') payload = parsed;
+  } catch (_) { /* Non-JSON request bodies are supported. */ }
+  var profile = { apiUrl: config.apiUrl, httpMethod: config.httpMethod,
+    headers: parseRequestHeaders(config.headers), payloadTemplate: payload };
+  parseConnectionProfile(JSON.stringify(profile));
+  return JSON.stringify(profile, null, 2) + '\n';
+}
+
 function isLoopbackAddress(targetUrl) {
   try {
     var hostname = new URL(targetUrl).hostname;
@@ -203,6 +255,7 @@ async function executeRestRequest(config, inputText) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DEFAULT_CONFIG: DEFAULT_CONFIG, loadOverlayConfig: loadOverlayConfig,
     saveOverlayConfig: saveOverlayConfig, updateOverlayConfig: updateOverlayConfig,
-    parseRequestHeaders: parseRequestHeaders, isLoopbackAddress: isLoopbackAddress,
+    parseRequestHeaders: parseRequestHeaders, parseConnectionProfile: parseConnectionProfile,
+    exportConnectionProfile: exportConnectionProfile, isLoopbackAddress: isLoopbackAddress,
     executeRestRequest: executeRestRequest };
 }

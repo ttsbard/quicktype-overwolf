@@ -422,18 +422,51 @@ test('Desktop response details collapse on success and open on HTTP failure', as
   assert.equal(d.element('resultBoxBody').textContent, 'Bad request');
 });
 
-test('Desktop service preset switches to TTSBard defaults and updates URL/method', () => {
-  const d = uiContext('quicktype-overlay/desktop.js');
-  assert.equal(d.element('serviceType').value, 'ttsbard');
-  d.element('serviceType').value = 'custom';
-  d.element('serviceType').events.change();
-  assert.equal(d.element('serviceType').value, 'custom');
-  d.element('apiUrl').value = 'https://custom.test/hook';
-  d.element('httpMethod').value = 'GET';
-  d.element('serviceType').value = 'ttsbard';
-  d.element('serviceType').events.change();
-  assert.equal(d.element('apiUrl').value, 'http://127.0.0.1:10101/v1/speech');
-  assert.equal(d.element('httpMethod').value, 'POST');
+test('Portable connections round trip JSON and text bodies without overlay settings', () => {
+  const c = configContext();
+  for (const payload of ['{"text":"{text}","voice":"Алёна"}', 'say {text}\nnext', '"literal"', '["{text}"]', '']) {
+    const cfg = { ...c.DEFAULT_CONFIG, payloadTemplate: payload };
+    const exported = c.exportConnectionProfile(cfg);
+    const profile = JSON.parse(exported);
+    assert.deepEqual(Object.keys(profile).sort(), ['apiUrl', 'headers', 'httpMethod', 'payloadTemplate']);
+    assert.equal(typeof profile.headers, 'object');
+    const restored = c.parseConnectionProfile(exported);
+    if (typeof profile.payloadTemplate === 'object') assert.deepEqual(JSON.parse(restored.payloadTemplate), JSON.parse(payload));
+    else assert.equal(restored.payloadTemplate, payload);
+    assert.equal(restored.apiUrl, cfg.apiUrl);
+  }
+});
+
+test('Connection import defaults omitted fields and rejects malformed values', () => {
+  const c = configContext();
+  const minimal = c.parseConnectionProfile('\uFEFF{"apiUrl":"http://localhost:10101/v1/speech"}');
+  assert.equal(minimal.httpMethod, 'POST');
+  assert.deepEqual(JSON.parse(minimal.headers), { 'Content-Type': 'application/json' });
+  const base = { apiUrl: 'https://example.com/hook' };
+  for (const value of [null, [], {}, { ...base, apiUrl: 'file:///secret' },
+    { ...base, httpMethod: 'DELETE' }, { ...base, headers: [] }, { ...base, headers: { Auth: 3 } },
+    { ...base, payloadTemplate: null }, { ...base, overlayOpacity: 80 }]) {
+    assert.throws(() => c.parseConnectionProfile(JSON.stringify(value)));
+  }
+  assert.throws(() => c.parseConnectionProfile('{bad'));
+});
+
+test('Desktop import is atomic, preserves overlay preferences and waits for Save', () => {
+  const d = uiContext('quicktype-overlay/desktop.js', { overlayOpacity: 75 }, { Blob });
+  const before = d.c.localStorage.getItem('quicktype_overlay_config');
+  d.element('connectionJson').value = '{"apiUrl":"https://example.com/hook","headers":{"Auth":3}}';
+  d.element('btn-apply-connection').events.click();
+  assert.equal(d.element('apiUrl').value, d.c.DEFAULT_CONFIG.apiUrl);
+  assert.match(d.element('connection-transfer-status').textContent, /Auth/);
+  d.element('connectionJson').value = '{"apiUrl":"https://example.com/hook","httpMethod":"get"}';
+  d.element('btn-apply-connection').events.click();
+  assert.equal(d.element('apiUrl').value, 'https://example.com/hook');
+  assert.equal(d.element('httpMethod').value, 'GET');
+  assert.equal(d.element('overlayOpacity').value, 75);
+  assert.equal(d.element('btn-save').disabled, false);
+  assert.equal(d.c.localStorage.getItem('quicktype_overlay_config'), before);
+  d.element('btn-save').events.click();
+  assert.equal(d.c.loadOverlayConfig().apiUrl, 'https://example.com/hook');
 });
 
 test('Desktop speech check reports service accepted text upon success', async () => {

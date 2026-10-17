@@ -52,35 +52,49 @@
 
           <!-- СЕКЦИЯ 1: Параметры сервиса -->
           <section class="settings-section">
-            <div class="section-header">
+            <div class="section-header connection-header">
               <span class="header-indicator purple"></span>
-              <h2 class="section-title">Адрес сервиса</h2>
+              <h2 class="section-title">Подключение</h2>
+              <div class="connection-actions">
+                <button type="button" id="btn-import-connection" class="btn btn-ghost" aria-expanded="false" aria-controls="connection-import">Импорт JSON</button>
+                <button type="button" id="btn-export-connection" class="btn btn-ghost">Экспорт JSON</button>
+              </div>
             </div>
 
-            <div class="form-group">
-              <label for="serviceType">Сервис озвучивания</label>
-              <select id="serviceType" class="form-select">
-                <option value="ttsbard">Локальный TTSBard</option>
-                <option value="custom">Другой сервис (REST / Webhook)</option>
-              </select>
+            <div id="connection-import" class="connection-import" hidden>
+              <div class="form-group">
+                <label for="connectionFile">Загрузить файл JSON</label>
+                <input type="file" id="connectionFile" class="form-input" accept=".json,application/json">
+              </div>
+              <div class="form-group">
+                <label for="connectionJson">Или вставить JSON</label>
+                <textarea id="connectionJson" class="form-textarea code-font" rows="7" spellcheck="false" placeholder='{"apiUrl":"http://127.0.0.1:10101/v1/speech","httpMethod":"POST","headers":{"Content-Type":"application/json"},"payloadTemplate":{"text":"{text}"}}'></textarea>
+              </div>
+              <p class="field-hint">Импорт заменит параметры подключения в форме. Проверьте их и нажмите «Сохранить».</p>
+              <div class="connection-actions import-actions">
+                <button type="button" id="btn-apply-connection" class="btn btn-action">Применить JSON</button>
+                <button type="button" id="btn-cancel-import" class="btn btn-ghost">Закрыть</button>
+              </div>
             </div>
+            <p id="connection-transfer-status" class="status-detail transfer-status" role="status" aria-live="polite"></p>
+            <p class="field-hint transfer-hint">JSON содержит только подключение, включая ключи доступа из заголовков.</p>
 
-            <div class="form-group endpoint-group">
-              <label for="apiUrl">Адрес (URL)</label>
-              <input type="text" id="apiUrl" class="form-input" placeholder="http://127.0.0.1:10101/v1/speech" spellcheck="false">
-              <span id="serviceHint" class="field-hint">Используется локальный сервер TTSBard (по умолчанию http://127.0.0.1:10101/v1/speech).</span>
+            <div class="endpoint-row">
+              <div class="form-group method-group">
+                <label for="httpMethod">Метод</label>
+                <select id="httpMethod" class="form-select">
+                  <option value="POST">POST</option><option value="GET">GET</option><option value="PUT">PUT</option>
+                </select>
+              </div>
+              <div class="form-group endpoint-group">
+                <label for="apiUrl">Адрес (URL)</label>
+                <input type="text" id="apiUrl" class="form-input" placeholder="http://127.0.0.1:10101/v1/speech" spellcheck="false">
+              </div>
             </div>
 
             <details id="requestDetails" class="disclosure">
               <summary>Дополнительные параметры запроса</summary>
               <div class="disclosure-content">
-                <div class="form-group method-group">
-                  <label for="httpMethod">HTTP Метод</label>
-                  <select id="httpMethod" class="form-select">
-                    <option value="POST">POST</option><option value="GET">GET</option><option value="PUT">PUT</option>
-                  </select>
-                </div>
-
                 <div class="form-group">
                   <label for="headers">Заголовки (JSON)</label>
                   <textarea id="headers" class="form-textarea code-font" rows="3" spellcheck="false"></textarea>

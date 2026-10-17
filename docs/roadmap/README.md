@@ -28,6 +28,9 @@ related_tasks: ["TASK-001"]
 
 ## Завершённые направления
 
+- [ROADMAP-002: Упрощение формы подключения](./completed/002-connection-editor.md) — `completed`
+- [ROADMAP-003: Обмен подключениями через JSON](./completed/003-connection-json.md) — `completed`
+
 - [ROADMAP-001: Универсальный REST Overlay для Overwolf App Store](./completed/001-universal-rest-overlay.md) — `completed` (релиз 0.3.0)
 
 ## Отклонённые направления

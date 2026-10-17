@@ -303,6 +303,49 @@ h1, h2, p {
   margin-bottom: 16px;
 }
 
+.connection-header, .connection-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.connection-header {
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.connection-actions .btn {
+  padding: 5px 9px;
+  min-height: 32px;
+  font-size: 12px;
+}
+
+.connection-import {
+  padding: 12px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.import-actions {
+  margin-top: 12px;
+}
+
+.transfer-status:empty {
+  display: none;
+}
+
+.transfer-status {
+  margin-top: 8px;
+  user-select: text;
+}
+
+.transfer-hint {
+  margin: 0 0 16px;
+}
+
 .endpoint-row .form-group {
   margin: 0;
 }

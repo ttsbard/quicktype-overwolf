@@ -1,0 +1,10 @@
+{
+  "apiUrl": "http://127.0.0.1:10101/v1/speech",
+  "httpMethod": "POST",
+  "headers": {
+    "Content-Type": "application/json"
+  },
+  "payloadTemplate": {
+    "text": "{text}"
+  }
+}

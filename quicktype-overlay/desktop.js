@@ -1,7 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
   // Элементы формы
-  var serviceTypeSelect = document.getElementById('serviceType');
-  var serviceHint = document.getElementById('serviceHint');
   var apiUrlInput = document.getElementById('apiUrl');
   var httpMethodSelect = document.getElementById('httpMethod');
   var headersTextarea = document.getElementById('headers');
@@ -90,35 +88,6 @@ document.addEventListener('DOMContentLoaded', function () {
     writePreference('quicktype_request_details', requestDetails.open ? 'open' : 'closed');
   });
 
-  function updateServiceHint() {
-    if (!serviceHint || !serviceTypeSelect) return;
-    if (serviceTypeSelect.value === 'ttsbard') {
-      serviceHint.textContent = 'Используется локальный сервер TTSBard (по умолчанию http://127.0.0.1:10101/v1/speech).';
-    } else {
-      serviceHint.textContent = 'URL любого внешнего сервиса или webhook, принимающего HTTP-запросы.';
-    }
-  }
-
-  if (serviceTypeSelect) {
-    serviceTypeSelect.addEventListener('change', function () {
-      if (serviceTypeSelect.value === 'ttsbard') {
-        apiUrlInput.value = 'http://127.0.0.1:10101/v1/speech';
-        httpMethodSelect.value = 'POST';
-      }
-      updateServiceHint();
-      updateSaveState();
-    });
-  }
-
-  apiUrlInput.addEventListener('input', function () {
-    if (serviceTypeSelect) {
-      var val = apiUrlInput.value.trim();
-      var isTTSBard = !val || val.indexOf('10101') !== -1;
-      serviceTypeSelect.value = isTTSBard ? 'ttsbard' : 'custom';
-      updateServiceHint();
-    }
-  });
-
   // Загружаем текущий конфиг
   var currentConfig = loadOverlayConfig();
   populateForm(currentConfig);
@@ -160,12 +129,6 @@ document.addEventListener('DOMContentLoaded', function () {
     headersTextarea.value = cfg.headers || '';
     payloadTemplateTextarea.value = cfg.payloadTemplate || '';
     
-    if (serviceTypeSelect) {
-      var isTTSBard = !cfg.apiUrl || cfg.apiUrl.indexOf('10101') !== -1;
-      serviceTypeSelect.value = isTTSBard ? 'ttsbard' : 'custom';
-      updateServiceHint();
-    }
-
     var opVal = cfg.overlayOpacity != null ? cfg.overlayOpacity : 90;
     overlayOpacityInput.value = opVal;
     if (opacityValueSpan) opacityValueSpan.textContent = opVal + '%';
@@ -192,6 +155,97 @@ document.addEventListener('DOMContentLoaded', function () {
       closeOnEscape: closeOnEscapeCheckbox.checked
     };
   }
+
+  var importPanel = document.getElementById('connection-import');
+  var importButton = document.getElementById('btn-import-connection');
+  var importText = document.getElementById('connectionJson');
+  var importFile = document.getElementById('connectionFile');
+  var transferStatus = document.getElementById('connection-transfer-status');
+  var fileReadVersion = 0;
+  var maxProfileSize = 1024 * 1024;
+
+  function transferMessage(message, success) {
+    transferStatus.textContent = message;
+    transferStatus.className = 'status-detail transfer-status ' + (success ? 'success' : 'error');
+  }
+
+  function closeImport() {
+    fileReadVersion++;
+    importPanel.hidden = true;
+    importButton.setAttribute('aria-expanded', 'false');
+    importButton.focus();
+  }
+
+  importButton.addEventListener('click', function () {
+    if (!importPanel.hidden) { closeImport(); return; }
+    importPanel.hidden = false;
+    importButton.setAttribute('aria-expanded', 'true');
+    importText.focus();
+  });
+  document.getElementById('btn-cancel-import').addEventListener('click', closeImport);
+  importPanel.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') { event.preventDefault(); closeImport(); }
+  });
+  importText.addEventListener('input', function () { fileReadVersion++; });
+  importFile.addEventListener('change', function () {
+    var version = ++fileReadVersion;
+    var file = importFile.files[0];
+    if (!file) return;
+    if (file.size > maxProfileSize) {
+      transferMessage('Файл слишком большой. Максимум — 1 МБ.', false);
+      importFile.value = '';
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function () {
+      if (version !== fileReadVersion) return;
+      importText.value = reader.result;
+      transferMessage('Файл загружен. Нажмите «Применить JSON».', true);
+      importFile.value = '';
+    };
+    reader.onerror = function () {
+      if (version !== fileReadVersion) return;
+      transferMessage('Не удалось прочитать файл. Выберите его ещё раз.', false);
+      importFile.value = '';
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+  document.getElementById('btn-apply-connection').addEventListener('click', function () {
+    try {
+      if (new Blob([importText.value]).size > maxProfileSize) throw new Error('Максимальный размер JSON — 1 МБ.');
+      var profile = parseConnectionProfile(importText.value);
+      // Validate everything before replacing any field. Overlay settings stay intact.
+      apiUrlInput.value = profile.apiUrl;
+      httpMethodSelect.value = profile.httpMethod;
+      headersTextarea.value = profile.headers;
+      payloadTemplateTextarea.value = profile.payloadTemplate;
+      updateSaveState();
+      closeImport();
+      transferMessage('Подключение загружено в форму. Проверьте и сохраните настройки.', true);
+    } catch (error) {
+      transferMessage(error.message, false);
+      importText.focus();
+    }
+  });
+  document.getElementById('btn-export-connection').addEventListener('click', function () {
+    var url;
+    var link;
+    try {
+      var json = exportConnectionProfile(readForm());
+      url = URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }));
+      link = document.createElement('a');
+      link.href = url;
+      link.download = 'quicktype-connection.json';
+      document.body.appendChild(link);
+      link.click();
+      transferMessage('JSON подготовлен к скачиванию из текущих значений формы.', true);
+    } catch (error) {
+      transferMessage('Не удалось экспортировать: ' + error.message, false);
+    } finally {
+      if (link) link.remove();
+      if (url) setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }
+  });
 
   function emitLiveConfig() {
     var cfg = readForm();

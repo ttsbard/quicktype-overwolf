@@ -11,16 +11,23 @@ $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
 $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAlias
 $g.Clear([System.Drawing.Color]::Transparent)
 
-# Twitch purple background circle
-$purple = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 145, 70, 255))
-$g.FillEllipse($purple, 8, 8, 240, 240)
-
-$font = New-Object System.Drawing.Font ('Segoe UI', 110, [System.Drawing.FontStyle]::Bold)
-$fmt = New-Object System.Drawing.StringFormat
-$fmt.Alignment = [System.Drawing.StringAlignment]::Center
-$fmt.LineAlignment = [System.Drawing.StringAlignment]::Center
+# Blue speech bubble with an input caret, matching the desktop titlebar.
+$blue = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 40, 91, 193))
 $white = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::White)
-$g.DrawString('Q', $font, $white, 128.0, 132.0, $fmt)
+$shape = New-Object System.Drawing.Drawing2D.GraphicsPath
+$shape.AddArc(20, 20, 40, 40, 180, 90)
+$shape.AddArc(196, 20, 40, 40, 270, 90)
+$shape.AddArc(196, 156, 40, 40, 0, 90)
+$shape.AddLine(216, 196, 122, 196)
+$shape.AddLine(122, 196, 68, 238)
+$shape.AddLine(68, 238, 68, 196)
+$shape.AddArc(20, 156, 40, 40, 90, 90)
+$shape.CloseFigure()
+$g.FillPath($blue, $shape)
+$g.FillRectangle($white, 118, 67, 20, 82)
+$shape.Dispose()
+$blue.Dispose()
+$white.Dispose()
 
 $g.Dispose()
 $bmp.Save($out, [System.Drawing.Imaging.ImageFormat]::Png)

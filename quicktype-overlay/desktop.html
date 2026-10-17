@@ -2,7 +2,7 @@
 <html lang="ru" data-theme="dark">
   <head>
     <meta charset="utf-8">
-    <title>QuickType — Настройки</title>
+    <title>QuickType</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="desktop.css">
   </head>
@@ -11,11 +11,22 @@
     <div class="window-titlebar" id="windowTitlebar">
       <div class="window-title">
         <svg class="window-icon" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M4 3h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4l-4 4-4-4H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v10h4l3 3 3-3h4V5H5z"/>
+          <path d="M4 3h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-7l-5 4v-4H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v10h5v2l2.3-2H19V5H5zM11 7h2v6h-2z"/>
         </svg>
-        <span>QuickType — Настройки</span>
+        <span>QuickType</span>
       </div>
       <div class="window-controls">
+        <label class="app-theme-control" title="Тема окна">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+            <circle cx="12" cy="12" r="8"/>
+            <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none"/>
+          </svg>
+          <select id="appTheme" aria-label="Тема окна (сохраняется сразу)">
+            <option value="system">Системная</option>
+            <option value="light">Светлая</option>
+            <option value="dark">Тёмная</option>
+          </select>
+        </label>
         <button type="button" class="window-control-btn" id="btnWindowMinimize" title="Свернуть" aria-label="Свернуть">
           <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
             <path d="M2 8a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 8z"/>
@@ -30,24 +41,6 @@
     </div>
 
     <div class="main-container">
-      <header class="app-hero">
-        <div class="brand-badge">
-          <svg class="brand-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M4 3h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-4l-4 4-4-4H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v10h4l3 3 3-3h4V5H5z"/>
-          </svg>
-        </div>
-        <div class="hero-text">
-          <h1 class="hero-title">QuickType</h1>
-          <p class="hero-subtitle">Быстрый ввод поверх игры</p>
-        </div>
-        <label class="app-theme-control" for="appTheme">Тема окна
-          <select id="appTheme" class="form-select" title="Тема окна применяется и сохраняется сразу">
-            <option value="system">Системная</option>
-            <option value="dark">Тёмная</option>
-            <option value="light">Светлая</option>
-          </select>
-        </label>
-      </header>
       <nav class="settings-tabs" role="tablist" aria-label="Разделы настроек">
         <button type="button" id="tab-connection" class="settings-tab" role="tab" aria-selected="true" aria-controls="panel-connection">Подключение</button>
         <button type="button" id="tab-overlay" class="settings-tab" role="tab" aria-selected="false" aria-controls="panel-overlay" tabindex="-1">Оверлей</button>

@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (windowTitlebar) {
     windowTitlebar.addEventListener('mousedown', function (e) {
-      if (e.target && e.target.closest && e.target.closest('.window-control-btn')) return;
+      if (e.target && e.target.closest && e.target.closest('.window-controls')) return;
       if (e.button !== 0) return;
       if (typeof overwolf !== 'undefined' && overwolf.windows) {
         overwolf.windows.getCurrentWindow(function (res) {

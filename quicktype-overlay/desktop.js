@@ -667,19 +667,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   btnTestRequest.addEventListener('click', performTest);
 
-  if (typeof overwolf !== 'undefined' && overwolf.settings && overwolf.settings.hotkeys && overwolf.settings.hotkeys.get) {
-    overwolf.settings.hotkeys.get(function (result) {
-      if (!result || !result.success) return;
-      var hotkeys = result && result.games ? Object.keys(result.games).reduce(function (all, key) {
-        return all.concat(result.games[key]);
-      }, []) : [];
-      hotkeys = hotkeys.concat(result && result.globals || []);
-      var bindings = hotkeys.filter(function (item) { return item.name === 'toggle_input_form'; }).map(function (item) {
-        return item.IsUnassigned ? 'Не назначена' : item.binding;
-      }).filter(function (binding, index, all) { return binding && all.indexOf(binding) === index; });
-      if (bindings.length) document.getElementById('overlayHotkey').textContent = bindings.length === 1 ? bindings[0] : 'Зависит от игры';
-    });
-  }
 
   testInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') {

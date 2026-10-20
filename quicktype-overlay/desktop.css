@@ -394,6 +394,17 @@ input[type="file"]::file-selector-button:hover {
   border-radius: 7px;
 }
 
+.connection-actions .btn-icon {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+}
+
 .connection-import {
   padding: 14px;
   margin-top: 10px;

@@ -434,6 +434,10 @@ test('Desktop response details collapse on success and open on HTTP failure', as
   await d.element('btn-test-request').events.click();
   assert.equal(d.element('testResultBox').open, true);
   assert.equal(d.element('resultBoxBody').textContent, 'Bad request');
+  d.c.executeRestRequest = async () => ({ ok: false, status: 404, durationMs: 20, body: '', error: 'Сервер вернул HTTP 404' });
+  await d.element('btn-test-request').events.click();
+  assert.match(d.element('resultStatusText').textContent, /Эндпоинт не найден/);
+  assert.equal(d.element('resultBoxBody').textContent, '(Тело ответа пустое)');
 });
 
 test('Portable connections round trip JSON and text bodies without overlay settings', () => {

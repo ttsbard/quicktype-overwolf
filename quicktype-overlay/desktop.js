@@ -602,22 +602,43 @@ document.addEventListener('DOMContentLoaded', function () {
           resultBadge.textContent = res.status ? ('HTTP ' + res.status) : 'Сбой';
           resultBadge.className = 'badge error';
         }
-        resultStatusText.textContent = res.status ? ('Ошибка сервера: HTTP ' + res.status) : 'Не удалось связаться с сервером';
+        var errorStatusMessage = '';
+        if (res.status) {
+          var httpReasons = {
+            400: 'Некорректный запрос (Bad Request)',
+            401: 'Требуется авторизация (Unauthorized)',
+            403: 'Доступ запрещён (Forbidden)',
+            404: 'Эндпоинт не найден (Not Found). Проверьте URL',
+            405: 'Метод не поддерживается (Method Not Allowed)',
+            408: 'Превышено время ожидания ответа',
+            429: 'Слишком много запросов (Rate Limit)',
+            500: 'Внутренняя ошибка сервера',
+            502: 'Сервер недоступен (Bad Gateway)',
+            503: 'Сервис временно недоступен',
+            504: 'Шлюз не отвечает (Gateway Timeout)'
+          };
+          var statusDesc = httpReasons[res.status] || (res.statusText && res.statusText !== 'OK' ? res.statusText : (res.status >= 500 ? 'Ошибка на стороне сервера' : 'Ошибка запроса'));
+          errorStatusMessage = statusDesc + (res.durationMs ? (' · ' + res.durationMs + ' мс') : '');
+        } else {
+          errorStatusMessage = 'Не удалось связаться с сервером. Проверьте адрес и запущен ли сервис';
+        }
+        resultStatusText.textContent = errorStatusMessage;
         resultStatusText.className = 'status-detail error';
 
         if (testResultBox) {
           testResultBox.style.display = 'block';
           testResultBox.open = true;
           testResultBox.className = 'test-result-box error';
-          resultBoxTitle.textContent = res.status ? ('Ответ сервера (HTTP ' + res.status + '):') : 'Причина сбоя:';
+          resultBoxTitle.textContent = res.status ? 'Тело ответа сервера:' : 'Причина сбоя:';
           resultBoxMeta.textContent = res.durationMs ? (res.durationMs + ' мс') : '';
 
           var detailsText = '';
           if (res.body) {
             detailsText = formatResponseBody(res.body);
-          }
-          if (res.error) {
-            detailsText = detailsText ? (detailsText + '\n\n' + res.error) : res.error;
+          } else if (res.status) {
+            detailsText = '(Тело ответа пустое)';
+          } else if (res.error) {
+            detailsText = res.error;
           }
           resultBoxBody.textContent = detailsText || 'Сервер не вернул деталей ошибки.';
         }

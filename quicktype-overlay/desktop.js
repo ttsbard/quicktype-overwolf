@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var opacityValueSpan = document.getElementById('opacityValue');
   var overlayBgColorInput = document.getElementById('overlayBgColor');
   var showHintsCheckbox = document.getElementById('showHints');
+  var overlayFontSelect = document.getElementById('overlayFont');
+  var overlayFontSizeInput = document.getElementById('overlayFontSize');
   var btnResetBounds = document.getElementById('btn-reset-bounds');
 
   var closeOnSubmitCheckbox = document.getElementById('closeOnSubmit');
@@ -31,8 +33,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var saveButton = document.getElementById('btn-save');
   var appTheme = document.getElementById('appTheme');
   var themeToggleBtn = document.getElementById('themeToggleBtn');
-  var overlayPreview = document.getElementById('overlayPreview');
-  var previewHints = document.getElementById('previewHints');
   var savedForm;
   var statusTimer;
   var systemTheme = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: light)') : null;
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
   populateForm(currentConfig);
   savedForm = JSON.stringify(readForm());
   updateSaveState();
-  updatePreview();
+  updateThemeChips();
 
   document.querySelectorAll('.settings-panel input, .settings-panel select, .settings-panel textarea').forEach(function (input) {
     if (input === testInput) return;
@@ -134,19 +134,21 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   function updateSaveState() {
-    var dirty = JSON.stringify(readForm()) !== savedForm;
-    dirtyIndicator.textContent = dirty ? 'Есть несохранённые изменения' : 'Все изменения сохранены';
+    var form = readForm();
+    var saved = JSON.parse(savedForm);
+    var dirty = JSON.stringify(form) !== savedForm;
+    var previewChanged = ['overlayOpacity', 'overlayBgColor', 'showHints', 'overlayFont', 'overlayFontSize'].some(function (key) {
+      return form[key] !== saved[key];
+    });
+    dirtyIndicator.textContent = previewChanged ? 'Применено · нажмите «Сохранить»' :
+      dirty ? 'Есть несохранённые изменения' : 'Все изменения сохранены';
     if (dirty) dirtyIndicator.classList.add('dirty');
     else dirtyIndicator.classList.remove('dirty');
     saveButton.disabled = !dirty;
   }
 
-  function updatePreview() {
+  function updateThemeChips() {
     var cfg = readForm();
-    var hex = cfg.overlayBgColor.slice(1);
-    var value = parseInt(hex, 16);
-    overlayPreview.style.background = 'rgba(' + ((value >> 16) & 255) + ',' + ((value >> 8) & 255) + ',' + (value & 255) + ',' + cfg.overlayOpacity / 100 + ')';
-    previewHints.hidden = !cfg.showHints;
     document.querySelectorAll('.theme-chip').forEach(function (chip) {
       var chipColor = chip.getAttribute('data-color');
       var chipOpacity = chip.getAttribute('data-opacity');
@@ -167,6 +169,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     overlayBgColorInput.value = cfg.overlayBgColor || '#0e0e12';
     showHintsCheckbox.checked = cfg.showHints !== false;
+    overlayFontSelect.value = Object.prototype.hasOwnProperty.call(OVERLAY_FONTS, cfg.overlayFont) ? cfg.overlayFont : 'default';
+    overlayFontSizeInput.value = getOverlayFontSize(cfg.overlayFontSize);
 
     closeOnSubmitCheckbox.checked = cfg.closeOnSubmit !== false;
     clearOnSubmitCheckbox.checked = cfg.clearOnSubmit !== false;
@@ -182,6 +186,8 @@ document.addEventListener('DOMContentLoaded', function () {
       overlayOpacity: parseInt(overlayOpacityInput.value, 10) || 90,
       overlayBgColor: overlayBgColorInput.value || '#0e0e12',
       showHints: showHintsCheckbox.checked,
+      overlayFont: overlayFontSelect.value,
+      overlayFontSize: getOverlayFontSize(overlayFontSizeInput.value),
       closeOnSubmit: closeOnSubmitCheckbox.checked,
       clearOnSubmit: clearOnSubmitCheckbox.checked,
       closeOnEscape: closeOnEscapeCheckbox.checked
@@ -457,16 +463,24 @@ document.addEventListener('DOMContentLoaded', function () {
   function emitLiveConfig() {
     var cfg = readForm();
     currentConfig = Object.assign({}, currentConfig, cfg);
-    updatePreview();
+    updateThemeChips();
     updateSaveState();
     if (typeof overwolf !== 'undefined') {
       overwolf.windows.sendMessage('background', 'preview_config', {
-        overlayOpacity: cfg.overlayOpacity, overlayBgColor: cfg.overlayBgColor, showHints: cfg.showHints
+        overlayOpacity: cfg.overlayOpacity, overlayBgColor: cfg.overlayBgColor, showHints: cfg.showHints,
+        overlayFont: cfg.overlayFont, overlayFontSize: cfg.overlayFontSize
       }, function () {});
     }
   }
 
   // Интерактивное обновление ползунка прозрачности
+  overlayFontSelect.addEventListener('change', emitLiveConfig);
+  overlayFontSizeInput.addEventListener('input', emitLiveConfig);
+  overlayFontSizeInput.addEventListener('change', function () {
+    overlayFontSizeInput.value = getOverlayFontSize(overlayFontSizeInput.value);
+    emitLiveConfig();
+  });
+
   overlayOpacityInput.addEventListener('input', function () {
     if (opacityValueSpan) opacityValueSpan.textContent = overlayOpacityInput.value + '%';
     emitLiveConfig();

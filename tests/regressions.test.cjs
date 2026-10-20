@@ -34,12 +34,12 @@ function uiContext(file, cfg = {}, extra = {}) {
     clearTimeout(id) { timers.delete(id); },
     document: { hidden: false, documentElement: element('root'), getElementById: element, querySelectorAll: () => [],
       addEventListener(n, f) { documentEvents[n] = f; } },
-    window: { focus() {}, addEventListener(n, f) { windowEvents[n] = f; } },
+    window: { innerWidth: 800, innerHeight: 250, focus() {}, addEventListener(n, f) { windowEvents[n] = f; } },
     overwolf: { windows: { onMessageReceived: { addListener(f) { ipc = f; } },
       sendMessage(...args) { messages.push(args); const cb = args.at(-1); if (typeof cb === 'function') cb({ success: true }); },
       requestOverlayFocus(id, cb) { assert.equal(id, 'overlay'); cb({ success: true }); },
       getCurrentWindow(cb) { cb({ success: true, window: { id: 'overlay', left: 30, top: 40, width: 800, height: 250 } }); },
-      dragMove(id, cb) { cb({ success: true }); }, dragResize(id, edge, cb) { dragResizes.push({ id, edge }); cb({ success: true }); },
+      dragMove(id, cb) { cb({ success: true }); }, dragResize(id, edge, rect, cb) { dragResizes.push({ id, edge, rect }); cb({ success: true }); },
       minimize(id, cb) { if (cb) cb({ success: true }); }, close(id, cb) { if (cb) cb({ success: true }); } } }, ...extra
   });
   c.updateOverlayConfig(cfg);
@@ -225,7 +225,7 @@ test('Legacy configuration survives settings migration and concurrent geometry w
 test('Missing IPC reply unlocks input without deleting the draft', () => {
   const u = uiContext('quicktype-overlay/overlay.js'); u.element('inputText').value = 'pending'; u.key('Enter');
   u.runTimers(16000); assert.equal(u.element('inputText').readOnly, false); assert.equal(u.element('inputText').value, 'pending');
-  assert.match(u.element('hudStatusBanner').textContent, /контроллера/);
+  assert.match(u.element('hudStatusText').textContent, /контроллера/);
 });
 test('Background forwards preview and request IDs using saved config', async () => {
   let listener; const sent = []; let submitted;
@@ -248,6 +248,38 @@ test('Background forwards preview and request IDs using saved config', async () 
   await new Promise(r => setImmediate(r)); assert.equal(sent.at(-1)[2].requestId, 'r2'); assert.equal(sent.at(-1)[2].ok, false);
   listener({ id: 'hide_overlay' }); assert.equal(sent.at(-1)[1], 'overlay_hidden');
 });
+test('Startup and hub launch open input; settings remain reachable without losing the draft', () => {
+  let launch, message;
+  const restored = [], focused = [];
+  const c = configContext({ setTimeout() { return 1; }, overwolf: {
+    extensions: { onAppLaunchTriggered: { addListener(f) { launch = f; } } },
+    settings: { hotkeys: { onPressed: { addListener() {} } } },
+    windows: {
+      onMessageReceived: { addListener(f) { message = f; } },
+      obtainDeclaredWindow(name, cb) { cb({ success: true, window: { id: name } }); },
+      restore(id, cb) { restored.push(id); cb({ success: true }); },
+      bringToFront(id, focus, cb) { cb(); },
+      requestOverlayFocus(id, cb) { focused.push(id); cb({ success: true }); },
+      sendMessage() {}
+    }
+  } });
+  vm.runInContext(source('quicktype-overlay/background.html').match(/<script>([\s\S]*?)<\/script>/)[1], c);
+  assert.deepEqual(restored, ['overlay']);
+  launch({ origin: 'dock' });
+  assert.deepEqual(restored, ['overlay', 'overlay']);
+  assert.deepEqual(focused, ['overlay', 'overlay']);
+  const u = uiContext('quicktype-overlay/overlay.js', { showHints: false });
+  u.element('inputText').value = 'Черновик';
+  u.element('btn-open-settings').events.click();
+  const request = u.messages.at(-1);
+  assert.equal(request[0], 'background');
+  assert.equal(request[1], 'open_settings');
+  message({ id: request[1] });
+  assert.equal(restored.at(-1), 'desktop');
+  assert.equal(u.element('inputText').value, 'Черновик');
+  assert.equal(JSON.parse(source('quicktype-overlay/manifest.json')).data.windows.overlay.in_game_only, false);
+});
+
 test('XML parser ignores comments, preserves Unicode and rejects DTD', () => {
   const { patchGameList, validateXml } = require('../scripts/patch-overwolf-gamelist.js');
   const fixture = '<Games><!-- <GameInfo><ID>1</ID></GameInfo> --><GameInfo><ID>1</ID><Name>Привет</Name><DisableSmartMixMode/></GameInfo></Games>';
@@ -278,6 +310,7 @@ test('All 8 edge and corner resize handles trigger overwolf dragResize with prop
   for (let i = 0; i < handles.length; i++) {
     assert.equal(u.dragResizes[i].id, 'overlay');
     assert.equal(u.dragResizes[i].edge, handles[i].edge);
+    assert.deepEqual({ ...u.dragResizes[i].rect }, { left: 0, top: 0, width: 800, height: 250 });
   }
 });
 
@@ -292,7 +325,7 @@ test('Submitting and success do not show banners or highlight borders; only erro
 
   // During submit: no banner, no glowing outline
   assert.equal(banner.style.display, 'none');
-  assert.equal(banner.textContent, '');
+  assert.equal(u.element('hudStatusText').textContent, '');
   assert.equal(container.classList.contains('status-sending'), false);
 
   const reqId = u.messages.find(m => m[1] === 'submit_text')[2].requestId;
@@ -300,7 +333,7 @@ test('Submitting and success do not show banners or highlight borders; only erro
   // On success: no banner, no glowing outline
   u.ipc({ id: 'rest_result', content: { ok: true, requestId: reqId } });
   assert.equal(banner.style.display, 'none');
-  assert.equal(banner.textContent, '');
+  assert.equal(u.element('hudStatusText').textContent, '');
   assert.equal(container.classList.contains('status-success'), false);
   u.runTimers(350);
 
@@ -312,13 +345,79 @@ test('Submitting and success do not show banners or highlight borders; only erro
 
   // On error: only error text, no red outline on container
   assert.equal(banner.style.display, 'flex');
-  assert.equal(banner.textContent, 'Ошибка 500');
+  assert.equal(u.element('hudStatusText').textContent, 'Ошибка 500');
   assert.equal(container.classList.contains('status-error'), false);
 
   // Typing clears the error
   input.events.input();
   assert.equal(banner.style.display, 'none');
-  assert.equal(banner.textContent, '');
+  assert.equal(u.element('hudStatusText').textContent, '');
+});
+
+test('Header close preserves the draft; error dismiss preserves text and permits retry', () => {
+  const u = uiContext('quicktype-overlay/overlay.js', { closeOnEscape: false });
+  const input = u.element('inputText');
+  input.value = 'Черновик';
+  u.key('Enter');
+  const request = u.messages.find(m => m[1] === 'submit_text')[2];
+  u.ipc({ id: 'rest_result', content: { ok: false, requestId: request.requestId, error: 'Ошибка' } });
+  assert.equal(u.element('btn-close-error').hidden, false);
+  u.element('btn-close-error').events.click();
+  assert.equal(u.element('hudStatusBanner').style.display, 'none');
+  assert.equal(u.element('btn-close-error').hidden, true);
+  assert.equal(input.value, 'Черновик');
+  u.key('Enter');
+  assert.equal(u.messages.filter(m => m[1] === 'submit_text').length, 2);
+  u.element('btn-close-overlay').events.click();
+  assert.equal(u.messages.at(-1)[1], 'hide_overlay');
+  assert.equal(input.value, 'Черновик');
+});
+
+test('Overlay typography previews without saving, persists on Save and restores on reopen', () => {
+  const d = uiContext('quicktype-overlay/desktop.js');
+  d.element('overlayFont').value = 'Consolas';
+  d.element('overlayFont').events.change();
+  d.element('overlayFontSize').value = '24';
+  d.element('overlayFontSize').events.input();
+  assert.equal(d.element('dirty-indicator').textContent, 'Применено · нажмите «Сохранить»');
+  assert.equal(d.c.loadOverlayConfig().overlayFontSize, 18);
+  const preview = d.messages.at(-1)[2];
+  const u = uiContext('quicktype-overlay/overlay.js');
+  u.ipc({ id: 'preview_config', content: preview });
+  assert.equal(u.element('inputText').style.fontFamily, 'Consolas, monospace');
+  assert.equal(u.element('inputText').style.fontSize, '24px');
+  d.element('btn-save').events.click();
+  const saved = d.c.loadOverlayConfig();
+  assert.equal(saved.overlayFont, 'Consolas');
+  assert.equal(saved.overlayFontSize, 24);
+  assert.equal(d.element('dirty-indicator').textContent, 'Все изменения сохранены');
+  const reopened = uiContext('quicktype-overlay/desktop.js', saved);
+  assert.equal(reopened.element('overlayFont').value, 'Consolas');
+  assert.equal(Number(reopened.element('overlayFontSize').value), 24);
+  const restored = uiContext('quicktype-overlay/overlay.js', saved);
+  assert.equal(restored.element('inputText').style.fontSize, '24px');
+  assert.equal(d.c.getOverlayFontSize(999), 48);
+  assert.equal(d.c.getOverlayFontSize(1), 10);
+  assert.equal(d.c.getOverlayFontSize('invalid'), 18);
+  assert.equal(d.c.getOverlayFontFamily('unknown'), d.c.OVERLAY_FONTS.default);
+});
+
+test('Native color picker applies the selected color without saving until Save', () => {
+  assert.match(source('quicktype-overlay/desktop.html'), /type="color" id="overlayBgColor"/);
+  const d = uiContext('quicktype-overlay/desktop.js');
+  d.element('overlayBgColor').value = '#ffffff';
+  d.element('overlayBgColor').events.input();
+  assert.equal(d.messages.at(-1)[2].overlayBgColor, '#ffffff');
+  assert.equal(d.c.loadOverlayConfig().overlayBgColor, '#0e0e12');
+  d.element('btn-save').events.click();
+  assert.equal(d.c.loadOverlayConfig().overlayBgColor, '#ffffff');
+});
+
+test('White overlay uses light appearance and returns to dark appearance on color change', () => {
+  const u = uiContext('quicktype-overlay/overlay.js', { overlayBgColor: '#ffffff' });
+  assert.equal(u.element('hudContainer').classList.contains('hud-light'), true);
+  u.ipc({ id: 'preview_config', content: { overlayBgColor: '#0e0e12' } });
+  assert.equal(u.element('hudContainer').classList.contains('hud-light'), false);
 });
 
 test('Desktop test response close button hides testResultBox and resets status badge', async () => {
@@ -367,13 +466,13 @@ test('Desktop appearance changes stay unsaved until Save and reverting clears di
   d.element('overlayOpacity').events.input();
   assert.equal(d.element('btn-save').disabled, false);
   assert.equal(d.c.loadOverlayConfig().overlayOpacity, 90);
-  assert.match(d.element('overlayPreview').style.background, /0.65/);
+  assert.equal(d.messages.at(-1)[2].overlayOpacity, 65);
   d.element('overlayOpacity').value = '90';
   d.element('overlayOpacity').events.input();
   assert.equal(d.element('btn-save').disabled, true);
   d.element('showHints').checked = false;
   d.element('showHints').events.change();
-  assert.equal(d.element('previewHints').hidden, true);
+  assert.equal(d.messages.at(-1)[2].showHints, false);
   d.element('btn-save').events.click();
   assert.equal(d.c.loadOverlayConfig().showHints, false);
   assert.equal(d.element('btn-save').disabled, true);
@@ -557,7 +656,7 @@ test('Overlay default height is compact 100px and error defaults to retry prompt
   u.key('Enter');
   const reqId = u.messages.find(m => m[1] === 'submit_text')[2].requestId;
   u.ipc({ id: 'rest_result', content: { ok: false, requestId: reqId } });
-  assert.equal(u.element('hudStatusBanner').textContent, 'Не удалось отправить. Enter — повторить');
+  assert.equal(u.element('hudStatusText').textContent, 'Не удалось отправить. Enter — повторить');
 });
 
 test('Overlay shows sending feedback banner on delay greater than 800ms', () => {
@@ -567,7 +666,7 @@ test('Overlay shows sending feedback banner on delay greater than 800ms', () => 
   assert.equal(u.element('hudStatusBanner').style.display, 'none');
   u.runTimers(800);
   assert.equal(u.element('hudStatusBanner').style.display, 'flex');
-  assert.equal(u.element('hudStatusBanner').textContent, 'Отправка...');
+  assert.equal(u.element('hudStatusText').textContent, 'Отправка...');
 });
 
 

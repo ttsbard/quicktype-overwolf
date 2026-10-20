@@ -13,6 +13,11 @@ html, body {
   user-select: none;
 }
 
+body {
+  border-radius: 9px;
+  clip-path: inset(0 round 9px);
+}
+
 :root {
   --hud-bg-color: #0e0e12;
   --hud-bg-opacity: 0.95;
@@ -24,52 +29,56 @@ html, body {
   position: relative;
   width: 100%;
   height: 100%;
-  padding: 5px 10px 6px 10px;
+  padding: 2px 6px 6px;
   background: var(--hud-bg);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 9px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.8), 0 0 1px rgba(255, 255, 255, 0.15);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  transition: border-color 0.2s, box-shadow 0.2s, background 0.15s;
+  transition: border-color 0.2s, background 0.15s;
 }
 
 /* Спокойный контур окна без конкурирующей светящейся рамки (фокус на поле ввода) */
 .hud-container:focus-within {
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.85);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 
 
 /* Зона захвата для перемещения окна (drag handle) */
+.hud-header {
+  display: flex;
+  align-items: center;
+  flex: 0 0 20px;
+  margin-bottom: 2px;
+}
+
+.hud-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud-header-actions .hud-icon-button {
+  flex-basis: 22px;
+  width: 22px;
+  height: 20px;
+  border: 1px solid transparent;
+}
+
 .hud-drag-strip {
-  width: 100%;
-  height: 8px;
+  flex: 1;
+  min-width: 0;
+  height: 20px;
   cursor: move;
-  -webkit-app-region: drag;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 4px;
   user-select: none;
   flex-shrink: 0;
-}
-
-.hud-drag-strip::after {
-  content: '';
-  width: 36px;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.22);
-  border-radius: 3px;
-  transition: background 0.15s, width 0.15s;
-}
-
-.hud-drag-strip:hover::after {
-  background: rgba(100, 149, 255, 0.8);
-  width: 48px;
 }
 
 /* Сообщение об ошибке (отображается только при сбое) */
@@ -82,6 +91,7 @@ html, body {
   border-radius: 6px;
   display: none;
   align-items: center;
+  gap: 6px;
   user-select: text;
   background: rgba(255, 79, 79, 0.16);
   color: #ff7b7b;
@@ -113,9 +123,51 @@ html, body {
   align-items: stretch;
   min-height: 0;
   position: relative;
+  gap: 6px;
+}
+
+.hud-icon-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  padding: 0;
+  line-height: 0;
+  appearance: none;
+  border-radius: 5px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.hud-icon-button svg {
+  display: block;
+}
+
+.hud-icon-button:hover, .hud-icon-button:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.hud-icon-button[hidden] {
+  display: none;
+}
+
+#hudStatusText {
+  flex: 1;
+  min-width: 0;
+}
+
+.hud-error-close {
+  margin-left: auto;
+  color: inherit;
 }
 
 .hud-input {
+  min-width: 0;
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.62);
@@ -134,8 +186,8 @@ html, body {
 
 .hud-input:focus {
   background: rgba(0, 0, 0, 0.72);
-  border-color: #6495ff;
-  box-shadow: 0 0 0 2px rgba(100, 149, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: none;
 }
 
 .hud-input:read-only {
@@ -299,4 +351,49 @@ kbd {
 
 .hud-resize-grip:hover {
   opacity: 1;
+}
+
+.hud-light {
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+.hud-light .hud-input {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.18);
+  color: #202938;
+}
+
+.hud-light .hud-input:focus {
+  border-color: rgba(0, 0, 0, 0.32);
+}
+
+.hud-light .hud-icon-button, .hud-light .shortcut-hint {
+  color: #556377;
+}
+
+.hud-light kbd {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #556377;
+}
+
+.hud-light .hud-icon-button:hover, .hud-light .hud-icon-button:focus-visible {
+  background: rgba(0, 0, 0, 0.1);
+  color: #202938;
+}
+
+.hud-light .hint-sep {
+  color: rgba(0, 0, 0, 0.25);
+}
+
+.hud-light .hud-status-banner.error {
+  color: #b32336;
+}
+
+.hud-light .hud-status-banner.info {
+  color: #285bc1;
+}
+
+.hud-light .hud-error-close {
+  color: inherit;
 }

@@ -90,7 +90,6 @@ button, input, select, textarea, summary {
   align-items: center;
   justify-content: space-between;
   padding-left: 14px;
-  border-bottom: 1px solid var(--border);
   -webkit-app-region: drag;
 }
 
@@ -112,18 +111,29 @@ button, input, select, textarea, summary {
 
 .window-controls {
   display: flex;
-  height: 100%;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
   -webkit-app-region: no-drag;
 }
 
 .window-control-btn {
-  border: 0;
-  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
   color: var(--muted);
-  width: 38px;
-  height: 100%;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  line-height: 0;
+  appearance: none;
   display: grid;
   place-items: center;
+  cursor: pointer;
+}
+
+.window-control-btn svg {
+  display: block;
 }
 
 .window-control-btn:hover {
@@ -167,7 +177,7 @@ h1, h2, p {
   border-bottom: 2.5px solid transparent;
   background: transparent;
   color: var(--muted);
-  padding: 12px 0 13px;
+  padding: 8px 0 9px;
   font-size: 15px;
   font-weight: 600;
   margin-bottom: -1px;
@@ -246,7 +256,7 @@ h1, h2, p {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 24px;
+  padding: 12px 24px 16px;
   scrollbar-gutter: stable;
 }
 
@@ -277,7 +287,7 @@ h1, h2, p {
 .section-divider {
   border: 0;
   border-top: 1px solid var(--border);
-  margin: 26px 0 22px;
+  margin: 18px 0 16px;
 }
 
 .form-group {
@@ -669,10 +679,6 @@ summary {
   font-size: 12.5px;
 }
 
-.connection-note {
-  margin-top: 12px;
-}
-
 .btn {
   display: inline-flex;
   justify-content: center;
@@ -736,7 +742,7 @@ summary {
 }
 
 .bottom-actions {
-  padding: 16px 24px;
+  padding: 8px 24px;
   border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -747,15 +753,15 @@ summary {
 }
 
 .bottom-actions .btn {
-  min-height: 36px;
-  padding: 7px 18px;
-  font-size: 13.5px;
-  border-radius: 7px;
+  min-height: 28px;
+  padding: 4px 12px;
+  font-size: 13px;
+  border-radius: 6px;
 }
 
 .save-state {
   min-width: 0;
-  font-size: 13.5px;
+  font-size: 12px;
   color: var(--muted);
 }
 
@@ -765,6 +771,10 @@ summary {
 }
 
 .save-toast:empty {
+  display: none;
+}
+
+.save-toast:not(:empty) + #dirty-indicator {
   display: none;
 }
 
@@ -798,6 +808,31 @@ summary {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.font-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.font-controls .form-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.font-controls .form-input {
+  width: 68px;
+}
+
+.font-controls .form-input, .font-controls .form-select {
+  min-height: 32px;
+  height: 32px;
+  padding: 5px 8px;
+  font-size: 13px;
 }
 
 .color-picker-wrap {
@@ -968,66 +1003,6 @@ kbd {
   margin: 0;
 }
 
-.preview-stage {
-  position: relative;
-  padding: 20px 16px 30px;
-  margin: 6px 0 18px;
-  border-radius: 9px;
-  overflow: hidden;
-  background: linear-gradient(155deg, #405758 0%, #253d49 45%, #76816a 46%, #394b43 62%, #1d2d35 100%);
-  border: 1px solid var(--border);
-}
-
-.overlay-preview {
-  background: rgba(14,14,18,.9);
-  padding: 6px 10px 8px;
-  border: 1px solid rgba(255,255,255,.14);
-  border-radius: 10px;
-  color: white;
-}
-
-.preview-drag {
-  width: 36px;
-  height: 3px;
-  margin: 2px auto 8px;
-  background: rgba(255,255,255,.22);
-  border-radius: 3px;
-}
-
-.preview-input {
-  min-height: 52px;
-  padding: 8px 12px;
-  background: rgba(0,0,0,.58);
-  border: 1px solid #6495ff;
-  border-radius: 7px;
-  font-size: 15px;
-  box-shadow: 0 0 0 2px rgba(100,149,255,.25);
-  color: #ffffff;
-}
-
-.preview-hints {
-  display: flex;
-  gap: 12px;
-  margin-top: 6px;
-  color: #a3adbb;
-  font-size: 11px;
-}
-
-.preview-hints kbd {
-  color: #b3b3bf;
-  background: rgba(255,255,255,.08);
-  border-color: rgba(255,255,255,.14);
-  font-size: 11px;
-}
-
-.preview-caption {
-  position: absolute;
-  bottom: 6px;
-  left: 16px;
-  font-size: 11px;
-  color: #e0e7e6;
-}
-
 @media (max-width: 520px) {
   .settings-tabs-bar {
     padding-left: 16px;
@@ -1040,11 +1015,6 @@ kbd {
   }
 
   .settings-panel {
-    padding: 18px 16px;
-  }
-
-  .preview-hints {
-    gap: 6px;
-    flex-wrap: wrap;
+    padding: 12px 16px 16px;
   }
 }

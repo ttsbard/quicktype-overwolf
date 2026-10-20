@@ -20,11 +20,11 @@
     // 1. Обработка клика по иконке в доке Overwolf или запуска приложения
     overwolf.extensions.onAppLaunchTriggered.addListener(function (event) {
       console.log('[QuickType] onAppLaunchTriggered:', event);
-      openDesktopWindow();
+      showOverlay();
     });
 
-    // При первичном запуске фонового скрипта сразу открываем десктопное окно настроек
-    openDesktopWindow();
+    // При запуске сразу открываем поле ввода; настройки доступны из него.
+    showOverlay();
 
     // 2. Хоткей вызова внутриигрового оверлея
     overwolf.settings.hotkeys.onPressed.addListener(function (event) {
@@ -51,7 +51,9 @@
 
     // 3. Обработка сообщений между окнами
     overwolf.windows.onMessageReceived.addListener(function (message) {
-      if (message.id === 'hide_overlay') {
+      if (message.id === 'open_settings') {
+        openDesktopWindow();
+      } else if (message.id === 'hide_overlay') {
         switching = true;
         hideOverlay();
       } else if (message.id === 'config_updated') {

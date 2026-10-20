@@ -17,14 +17,22 @@
     <div class="hud-resize-corner hud-resize-bottom-left" id="hudResizeBottomLeft" data-edge="BottomLeft"></div>
     <div class="hud-resize-corner hud-resize-bottom-right hud-resize-grip" id="hudResizeGrip" data-edge="BottomRight" title="Потяните для изменения размера"></div>
 
-    <!-- Тонкая элегантная зона перемещения окна вверху -->
-    <div class="hud-drag-strip" id="hudDrag" title="Потяните для перемещения окна"></div>
+    <div class="hud-header">
+      <div class="hud-drag-strip" id="hudDrag"></div>
+      <div class="hud-header-actions">
+        <button type="button" id="btn-open-settings" class="hud-icon-button" title="Настройки" aria-label="Открыть настройки">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><g transform="translate(0 .4)"><path d="m6.5 1-.4 1.7-1.4.8L3 3l-1.5 2.6 1.3 1.2v1.6l-1.3 1.2L3 12.2l1.7-.5 1.4.8.4 1.7h3l.4-1.7 1.4-.8 1.7.5 1.5-2.6-1.3-1.2V6.8l1.3-1.2L13 3l-1.7.5-1.4-.8L9.5 1Z"/><circle cx="8" cy="7.6" r="2.2"/></g></svg>
+        </button>
+        <button type="button" id="btn-close-overlay" class="hud-icon-button" title="Закрыть" aria-label="Закрыть окно ввода">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="m3 3 10 10m0-10-10 10"/></svg>
+        </button>
+      </div>
+    </div>
 
     <div class="input-wrapper">
       <textarea 
         id="inputText" 
         class="hud-input" 
-        placeholder="Введите сообщение…" 
         autocomplete="off" 
         spellcheck="false" 
         autofocus
@@ -32,7 +40,12 @@
     </div>
 
     <!-- Сообщение об ошибке при отправке -->
-    <div class="hud-status-banner error" id="hudStatusBanner" style="display: none;"></div>
+    <div class="hud-status-banner" id="hudStatusBanner" style="display: none;">
+      <span id="hudStatusText" role="status" aria-live="polite"></span>
+      <button type="button" id="btn-close-error" class="hud-icon-button hud-error-close" title="Скрыть ошибку" aria-label="Скрыть ошибку" hidden>
+        <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><path d="m4 4 8 8m0-8-8 8"/></svg>
+      </button>
+    </div>
 
     <!-- Подсказки по клавишам (скрываемые через настройки) -->
     <div class="hud-footer" id="hudFooter">

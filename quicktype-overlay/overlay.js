@@ -4,7 +4,23 @@ document.addEventListener('DOMContentLoaded', function () {
   var hudDrag = document.getElementById('hudDrag');
   var hudResizeGrip = document.getElementById('hudResizeGrip');
   var hudStatusBanner = document.getElementById('hudStatusBanner');
+  var hudStatusText = document.getElementById('hudStatusText');
+  var closeErrorButton = document.getElementById('btn-close-error');
+  var closeOverlayButton = document.getElementById('btn-close-overlay');
   var hudFooter = document.getElementById('hudFooter');
+  var settingsButton = document.getElementById('btn-open-settings');
+
+  if (settingsButton) settingsButton.addEventListener('click', function () {
+    if (typeof overwolf !== 'undefined') {
+      overwolf.windows.sendMessage('background', 'open_settings', {}, function () {});
+    }
+  });
+
+  if (closeOverlayButton) closeOverlayButton.addEventListener('click', hideOverlay);
+  if (closeErrorButton) closeErrorButton.addEventListener('click', function () {
+    setStatus('normal');
+    focusField();
+  });
 
   var config = loadOverlayConfig();
   var isSubmitting = false;
@@ -36,8 +52,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 1. Применяем фон и прозрачность к контейнеру
     var rgba = hexToRgba(config.overlayBgColor, config.overlayOpacity);
+    if (inputField) {
+      inputField.style.fontFamily = getOverlayFontFamily(config.overlayFont);
+      inputField.style.fontSize = getOverlayFontSize(config.overlayFontSize) + 'px';
+    }
     if (hudContainer) {
       hudContainer.style.setProperty('--hud-bg', rgba);
+      var rgb = rgba.match(/[\d.]+/g);
+      var light = Number(rgb[0]) * 0.2126 + Number(rgb[1]) * 0.7152 + Number(rgb[2]) * 0.0722 > 170;
+      if (light) hudContainer.classList.add('hud-light');
+      else hudContainer.classList.remove('hud-light');
     }
 
     // 2. Управление видимостью подсказок
@@ -60,17 +84,18 @@ document.addEventListener('DOMContentLoaded', function () {
       sendingDelayTimer = null;
     }
 
-    if (!hudContainer || !hudStatusBanner) return;
+    if (!hudContainer || !hudStatusBanner || !hudStatusText) return;
+    if (closeErrorButton) closeErrorButton.hidden = type !== 'error';
 
     if (type === 'sending') {
       hudStatusBanner.style.display = 'none';
-      hudStatusBanner.textContent = '';
+      hudStatusText.textContent = '';
       hudStatusBanner.className = 'hud-status-banner';
       // Короткий статус только при задержке отправки
       sendingDelayTimer = setTimeout(function () {
         if (isSubmitting && overlayVisible) {
           hudStatusBanner.className = 'hud-status-banner info';
-          hudStatusBanner.textContent = 'Отправка...';
+          hudStatusText.textContent = 'Отправка...';
           hudStatusBanner.style.display = 'flex';
         }
       }, 800);
@@ -79,14 +104,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (type !== 'error') {
       hudStatusBanner.style.display = 'none';
-      hudStatusBanner.textContent = '';
+      hudStatusText.textContent = '';
       hudStatusBanner.className = 'hud-status-banner';
       return;
     }
 
     // Отображаем исключительно сообщение об ошибке (без цветных подсветок окна)
     hudStatusBanner.className = 'hud-status-banner error';
-    hudStatusBanner.textContent = text || 'Не удалось отправить. Enter — повторить';
+    hudStatusText.textContent = text || 'Не удалось отправить. Enter — повторить';
     hudStatusBanner.style.display = 'flex';
   }
 
@@ -165,7 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
         applyConfig(message.content);
       } else if (message.id === 'preview_config') {
         var preview = message.content || {};
-        ['overlayOpacity', 'overlayBgColor', 'showHints'].forEach(function (key) {
+        ['overlayOpacity', 'overlayBgColor', 'showHints', 'overlayFont', 'overlayFontSize'].forEach(function (key) {
           if (Object.prototype.hasOwnProperty.call(preview, key)) previewConfig[key] = preview[key];
         });
         applyConfig(loadOverlayConfig());
@@ -239,7 +264,15 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof overwolf === 'undefined' || !overwolf.windows) return;
     var edge = getDragEdge(edgeName);
     var doResize = function (winId) {
-      overwolf.windows.dragResize(winId, edge, debouncedSaveBounds);
+      // The third argument is the content rectangle, not a callback.
+      var rect = { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
+      overwolf.windows.dragResize(winId, edge, rect, function (result) {
+        if (result && result.success === false) {
+          setStatus('error', 'Не удалось изменить размер окна: ' + (result.error || 'ошибка Overwolf'));
+          return;
+        }
+        saveCurrentBounds();
+      });
     };
     if (currentWindowId) {
       doResize(currentWindowId);

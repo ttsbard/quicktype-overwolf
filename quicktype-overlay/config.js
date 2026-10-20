@@ -19,12 +19,33 @@ var DEFAULT_CONFIG = {
   overlayHeight: 100,
   overlayOpacity: 90,
   overlayBgColor: '#0e0e12',
+  overlayFont: 'default',
+  overlayFontSize: 18,
   showHints: true,
   overlayBounds: null,
   closeOnSubmit: true,
   clearOnSubmit: true,
   closeOnEscape: true
 };
+
+var OVERLAY_FONTS = {
+  'default': '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+  'Arial': 'Arial, sans-serif',
+  'Segoe UI': '"Segoe UI", sans-serif',
+  'Tahoma': 'Tahoma, sans-serif',
+  'Verdana': 'Verdana, sans-serif',
+  'Consolas': 'Consolas, monospace',
+  'Courier New': '"Courier New", monospace'
+};
+
+function getOverlayFontFamily(font) {
+  return Object.prototype.hasOwnProperty.call(OVERLAY_FONTS, font) ? OVERLAY_FONTS[font] : OVERLAY_FONTS.default;
+}
+
+function getOverlayFontSize(value) {
+  var size = Number(value);
+  return isFinite(size) && size > 0 ? Math.max(10, Math.min(48, Math.round(size))) : DEFAULT_CONFIG.overlayFontSize;
+}
 
 function loadOverlayConfig() {
   var config = Object.assign({}, DEFAULT_CONFIG);

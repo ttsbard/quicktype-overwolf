@@ -9,7 +9,7 @@
     "description": "Universal in-game quick input overlay with REST API & webhook integration.",
     "dock_button_title": "QuickType",
     "icon": "icon.png",
-    "launcher_icon": "icon.png",
+    "launcher_icon": "icon.ico",
     "window_icon": "icon.png"
   },
   "permissions": [

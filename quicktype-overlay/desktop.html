@@ -4,14 +4,27 @@
     <meta charset="utf-8">
     <title>QuickType</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="shortcut icon" href="icon.ico">
     <link rel="stylesheet" href="desktop.css">
   </head>
   <body>
     <!-- Системный заголовок окна с кнопками управления -->
     <div class="window-titlebar" id="windowTitlebar">
       <div class="window-title">
-        <svg class="window-icon" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M4 3h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-7l-5 4v-4H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v10h5v2l2.3-2H19V5H5zM11 7h2v6h-2z"/>
+        <svg class="window-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="qtTitlebarGrad" x1="0" y1="0" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#3b82f6"/>
+              <stop offset="1" stop-color="#1d4ed8"/>
+            </linearGradient>
+          </defs>
+          <rect width="24" height="24" rx="6" fill="url(#qtTitlebarGrad)"/>
+          <g stroke="#ffffff" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3.75" y="6.75" width="16.5" height="10.5" rx="3"/>
+            <path d="M6.25 9.25h2.5 M6.25 14.75h2.5 M7.5 9.25v5.5"/>
+            <path d="M11.75 12h5" opacity="0.75"/>
+          </g>
         </svg>
         <span>QuickType</span>
       </div>

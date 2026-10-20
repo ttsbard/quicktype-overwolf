@@ -16,24 +16,13 @@
         <span>QuickType</span>
       </div>
       <div class="window-controls">
-        <label class="app-theme-control" title="Тема окна">
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
-            <circle cx="12" cy="12" r="8"/>
-            <path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none"/>
-          </svg>
-          <select id="appTheme" aria-label="Тема окна (сохраняется сразу)">
-            <option value="system">Системная</option>
-            <option value="light">Светлая</option>
-            <option value="dark">Тёмная</option>
-          </select>
-        </label>
         <button type="button" class="window-control-btn" id="btnWindowMinimize" title="Свернуть" aria-label="Свернуть">
-          <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
+          <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor">
             <path d="M2 8a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75A.75.75 0 0 1 2 8z"/>
           </svg>
         </button>
         <button type="button" class="window-control-btn close" id="btnWindowClose" title="Закрыть" aria-label="Закрыть">
-          <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor">
+          <svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor">
             <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/>
           </svg>
         </button>
@@ -41,10 +30,35 @@
     </div>
 
     <div class="main-container">
-      <nav class="settings-tabs" role="tablist" aria-label="Разделы настроек">
-        <button type="button" id="tab-connection" class="settings-tab" role="tab" aria-selected="true" aria-controls="panel-connection">Подключение</button>
-        <button type="button" id="tab-overlay" class="settings-tab" role="tab" aria-selected="false" aria-controls="panel-overlay" tabindex="-1">Оверлей</button>
-      </nav>
+      <div class="settings-tabs-bar">
+        <nav class="settings-tabs" role="tablist" aria-label="Разделы настроек">
+          <button type="button" id="tab-connection" class="settings-tab" role="tab" aria-selected="true" aria-controls="panel-connection">Подключение</button>
+          <button type="button" id="tab-overlay" class="settings-tab" role="tab" aria-selected="false" aria-controls="panel-overlay" tabindex="-1">Оверлей</button>
+        </nav>
+        <div class="tabs-theme-wrap">
+          <button type="button" id="themeToggleBtn" class="theme-toggle-btn" title="Переключить на светлую тему" aria-label="Переключить на светлую тему">
+            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+          <select id="appTheme" class="sr-only" aria-hidden="true" tabindex="-1">
+            <option value="system">Системная</option>
+            <option value="light">Светлая</option>
+            <option value="dark">Тёмная</option>
+          </select>
+        </div>
+      </div>
 
       <!-- Содержимое активной вкладки прокручивается независимо от панели сохранения -->
       <main class="settings-panel">

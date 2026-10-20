@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var dirtyIndicator = document.getElementById('dirty-indicator');
   var saveButton = document.getElementById('btn-save');
   var appTheme = document.getElementById('appTheme');
+  var themeToggleBtn = document.getElementById('themeToggleBtn');
   var overlayPreview = document.getElementById('overlayPreview');
   var previewHints = document.getElementById('previewHints');
   var savedForm;
@@ -44,18 +45,49 @@ document.addEventListener('DOMContentLoaded', function () {
     try { localStorage.setItem(key, value); } catch (_) { /* The current session still works. */ }
   }
 
-  function applyTheme() {
-    var theme = appTheme.value === 'system' ? (systemTheme && systemTheme.matches ? 'light' : 'dark') : appTheme.value;
-    document.documentElement.setAttribute('data-theme', theme);
+  function updateThemeButton(theme) {
+    if (!themeToggleBtn) return;
+    if (theme === 'dark') {
+      themeToggleBtn.title = 'Переключить на светлую тему';
+      themeToggleBtn.setAttribute('aria-label', 'Переключить на светлую тему');
+    } else {
+      themeToggleBtn.title = 'Переключить на тёмную тему';
+      themeToggleBtn.setAttribute('aria-label', 'Переключить на тёмную тему');
+    }
   }
 
-  appTheme.value = readPreference('quicktype_desktop_theme', 'system');
-  if (['system', 'dark', 'light'].indexOf(appTheme.value) === -1) appTheme.value = 'system';
-  applyTheme();
-  appTheme.addEventListener('change', function () {
+  function applyTheme() {
+    var rawTheme = appTheme ? appTheme.value : 'system';
+    var theme = rawTheme === 'system' ? (systemTheme && systemTheme.matches ? 'light' : 'dark') : rawTheme;
+    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeButton(theme);
+  }
+
+  if (appTheme) {
+    appTheme.value = readPreference('quicktype_desktop_theme', 'system');
+    if (['system', 'dark', 'light'].indexOf(appTheme.value) === -1) appTheme.value = 'system';
     applyTheme();
-    writePreference('quicktype_desktop_theme', appTheme.value);
-  });
+    appTheme.addEventListener('change', function () {
+      applyTheme();
+      writePreference('quicktype_desktop_theme', appTheme.value);
+    });
+  } else {
+    applyTheme();
+  }
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', function () {
+      var current = document.documentElement.getAttribute('data-theme') || 'dark';
+      var next = current === 'dark' ? 'light' : 'dark';
+      if (appTheme) {
+        appTheme.value = next;
+      }
+      document.documentElement.setAttribute('data-theme', next);
+      updateThemeButton(next);
+      writePreference('quicktype_desktop_theme', next);
+    });
+  }
+
   if (systemTheme) {
     if (systemTheme.addEventListener) systemTheme.addEventListener('change', applyTheme);
     else if (systemTheme.addListener) systemTheme.addListener(applyTheme);

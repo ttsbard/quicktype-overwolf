@@ -398,6 +398,20 @@ test('Desktop system theme follows OS changes independently of saved overlay app
   assert.equal(d.element('btn-save').disabled, true);
 });
 
+test('Desktop theme toggle button toggles between dark and light themes', () => {
+  const d = uiContext('quicktype-overlay/desktop.js');
+  assert.equal(d.element('root').attributes['data-theme'], 'dark');
+  assert.equal(d.element('themeToggleBtn').title, 'Переключить на светлую тему');
+  d.element('themeToggleBtn').events.click();
+  assert.equal(d.element('root').attributes['data-theme'], 'light');
+  assert.equal(d.element('themeToggleBtn').title, 'Переключить на тёмную тему');
+  assert.equal(d.c.localStorage.getItem('quicktype_desktop_theme'), 'light');
+  d.element('themeToggleBtn').events.click();
+  assert.equal(d.element('root').attributes['data-theme'], 'dark');
+  assert.equal(d.element('themeToggleBtn').title, 'Переключить на светлую тему');
+  assert.equal(d.c.localStorage.getItem('quicktype_desktop_theme'), 'dark');
+});
+
 test('Desktop invalid headers reveal their editor from the overlay tab and preserve saved settings', () => {
   const d = uiContext('quicktype-overlay/desktop.js');
   d.element('tab-overlay').events.click();

@@ -288,7 +288,7 @@ h1, h2, p {
   margin-bottom: 0;
 }
 
-.form-group label {
+.form-group > label {
   display: block;
   margin-bottom: 7px;
   font-size: 13.5px;
@@ -316,6 +316,32 @@ h1, h2, p {
 .form-input::placeholder {
   color: var(--muted);
 }
+
+input[type="file"].form-input {
+  display: flex;
+  align-items: center;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+  border: 1px solid var(--border);
+  background: var(--hover);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 5px 12px;
+  margin-right: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+  background: var(--border);
+  border-color: var(--accent);
+}
+
 
 .form-textarea {
   display: block;
@@ -374,6 +400,105 @@ h1, h2, p {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
+}
+
+.file-picker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  transition: border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+
+.file-picker:hover {
+  border-color: var(--accent);
+}
+
+.file-picker.is-dragover {
+  border-color: var(--accent);
+  border-style: dashed;
+  background: var(--accent-soft);
+}
+
+.file-picker:focus-within {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 0;
+}
+
+.file-picker-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  opacity: 0;
+}
+
+.form-group label.file-picker-trigger,
+.file-picker-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 4px 10px 4px 5px;
+  margin-bottom: 0;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13.5px;
+  font-weight: normal;
+}
+
+.file-picker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  min-height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--hover);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  pointer-events: none;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.file-picker:hover .file-picker-btn {
+  background: var(--border);
+  border-color: var(--accent);
+}
+
+.file-picker-icon {
+  flex-shrink: 0;
+  opacity: .9;
+}
+
+.file-picker-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 6px;
+}
+
+.file-picker-name.has-file {
+  color: var(--text);
+  font-weight: 600;
 }
 
 .import-actions {

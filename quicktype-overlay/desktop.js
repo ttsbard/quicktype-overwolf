@@ -192,6 +192,8 @@ document.addEventListener('DOMContentLoaded', function () {
   var importButton = document.getElementById('btn-import-connection');
   var importText = document.getElementById('connectionJson');
   var importFile = document.getElementById('connectionFile');
+  var importFileName = document.getElementById('connectionFileName');
+  var filePicker = document.getElementById('connectionFilePicker');
   var transferStatus = document.getElementById('connection-transfer-status');
   var fileReadVersion = 0;
   var maxProfileSize = 1024 * 1024;
@@ -201,10 +203,55 @@ document.addEventListener('DOMContentLoaded', function () {
     transferStatus.className = 'status-detail transfer-status ' + (success ? 'success' : 'error');
   }
 
+  function resetImportFileName() {
+    if (importFileName) {
+      importFileName.textContent = 'Файл не выбран';
+      if (importFileName.classList && typeof importFileName.classList.remove === 'function') {
+        importFileName.classList.remove('has-file');
+      }
+    }
+  }
+
+  function setImportFileName(name) {
+    if (importFileName) {
+      importFileName.textContent = name;
+      if (importFileName.classList && typeof importFileName.classList.add === 'function') {
+        importFileName.classList.add('has-file');
+      }
+    }
+  }
+
+  function handleImportFile(file) {
+    if (!file) return;
+    if (file.size > maxProfileSize) {
+      transferMessage('Файл слишком большой. Максимум — 1 МБ.', false);
+      if (importFile) importFile.value = '';
+      resetImportFileName();
+      return;
+    }
+    var version = ++fileReadVersion;
+    var reader = new FileReader();
+    reader.onload = function () {
+      if (version !== fileReadVersion) return;
+      importText.value = reader.result;
+      setImportFileName(file.name);
+      transferMessage('Файл «' + file.name + '» загружен. Нажмите «Применить JSON».', true);
+      if (importFile) importFile.value = '';
+    };
+    reader.onerror = function () {
+      if (version !== fileReadVersion) return;
+      transferMessage('Не удалось прочитать файл. Выберите его ещё раз.', false);
+      if (importFile) importFile.value = '';
+      resetImportFileName();
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
   function closeImport() {
     fileReadVersion++;
     importPanel.hidden = true;
     importButton.setAttribute('aria-expanded', 'false');
+    resetImportFileName();
     importButton.focus();
   }
 
@@ -218,30 +265,43 @@ document.addEventListener('DOMContentLoaded', function () {
   importPanel.addEventListener('keydown', function (event) {
     if (event.key === 'Escape') { event.preventDefault(); closeImport(); }
   });
-  importText.addEventListener('input', function () { fileReadVersion++; });
-  importFile.addEventListener('change', function () {
-    var version = ++fileReadVersion;
-    var file = importFile.files[0];
-    if (!file) return;
-    if (file.size > maxProfileSize) {
-      transferMessage('Файл слишком большой. Максимум — 1 МБ.', false);
-      importFile.value = '';
-      return;
-    }
-    var reader = new FileReader();
-    reader.onload = function () {
-      if (version !== fileReadVersion) return;
-      importText.value = reader.result;
-      transferMessage('Файл загружен. Нажмите «Применить JSON».', true);
-      importFile.value = '';
-    };
-    reader.onerror = function () {
-      if (version !== fileReadVersion) return;
-      transferMessage('Не удалось прочитать файл. Выберите его ещё раз.', false);
-      importFile.value = '';
-    };
-    reader.readAsText(file, 'UTF-8');
+  importText.addEventListener('input', function () {
+    fileReadVersion++;
+    resetImportFileName();
   });
+  if (importFile) {
+    importFile.addEventListener('change', function () {
+      var file = importFile.files && importFile.files[0];
+      if (file) handleImportFile(file);
+    });
+  }
+  if (filePicker && typeof filePicker.addEventListener === 'function') {
+    ['dragenter', 'dragover'].forEach(function (eventName) {
+      filePicker.addEventListener(eventName, function (event) {
+        if (event && event.preventDefault) event.preventDefault();
+        if (event && event.stopPropagation) event.stopPropagation();
+        if (event && event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+        if (filePicker.classList && typeof filePicker.classList.add === 'function') {
+          filePicker.classList.add('is-dragover');
+        }
+      });
+    });
+    ['dragleave', 'drop'].forEach(function (eventName) {
+      filePicker.addEventListener(eventName, function (event) {
+        if (event && event.preventDefault) event.preventDefault();
+        if (event && event.stopPropagation) event.stopPropagation();
+        if (filePicker.classList && typeof filePicker.classList.remove === 'function') {
+          filePicker.classList.remove('is-dragover');
+        }
+      });
+    });
+    filePicker.addEventListener('drop', function (event) {
+      var dt = event && event.dataTransfer;
+      if (dt && dt.files && dt.files[0]) {
+        handleImportFile(dt.files[0]);
+      }
+    });
+  }
   document.getElementById('btn-apply-connection').addEventListener('click', function () {
     try {
       if (new Blob([importText.value]).size > maxProfileSize) throw new Error('Максимальный размер JSON — 1 МБ.');

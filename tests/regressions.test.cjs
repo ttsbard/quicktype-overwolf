@@ -483,6 +483,27 @@ test('Desktop import is atomic, preserves overlay preferences and waits for Save
   assert.equal(d.c.loadOverlayConfig().apiUrl, 'https://example.com/hook');
 });
 
+test('Desktop import file reads file content and updates filename display', () => {
+  class MockFileReader {
+    readAsText(file) {
+      this.result = file.content;
+      this.onload();
+    }
+  }
+  const d = uiContext('quicktype-overlay/desktop.js', {}, { FileReader: MockFileReader, Blob });
+  const fakeFile = { name: 'profile.json', size: 100, content: '{"apiUrl":"https://example.com/file"}' };
+  d.element('connectionFile').files = [fakeFile];
+  d.element('connectionFile').events.change();
+  assert.equal(d.element('connectionJson').value, '{"apiUrl":"https://example.com/file"}');
+  assert.equal(d.element('connectionFileName').textContent, 'profile.json');
+  assert.ok(d.element('connectionFileName').classList.contains('has-file'));
+  assert.match(d.element('connection-transfer-status').textContent, /profile\.json/);
+
+  d.element('connectionJson').events.input();
+  assert.equal(d.element('connectionFileName').textContent, 'Файл не выбран');
+  assert.ok(!d.element('connectionFileName').classList.contains('has-file'));
+});
+
 test('Desktop connection export copies to clipboard, populates textarea and saves file', () => {
   let placed = '';
   let writtenPath = '', writtenContent = '';

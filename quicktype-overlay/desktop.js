@@ -438,22 +438,6 @@ document.addEventListener('DOMContentLoaded', function () {
     saveOverwolfOrDownload(json, callback);
   }
 
-  var btnCopyJson = document.getElementById('btn-copy-json');
-  if (btnCopyJson) {
-    btnCopyJson.addEventListener('click', function () {
-      var text = importText.value.trim();
-      if (!text) {
-        try {
-          text = exportConnectionProfile(readForm());
-          importText.value = text;
-        } catch (_) {}
-      }
-      if (text) {
-        copyToClipboard(text);
-        transferMessage('JSON скопирован в буфер обмена!', true);
-      }
-    });
-  }
 
   document.getElementById('btn-export-connection').addEventListener('click', function () {
     try {
@@ -580,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function () {
   async function performTest() {
     if (btnTestRequest.disabled) return;
     var cfg = readForm();
-    var text = testInput.value.trim();
+    var text = testInput.value.trim() || 'Проверка';
 
     btnTestRequest.disabled = true;
     if (resultBadge) {

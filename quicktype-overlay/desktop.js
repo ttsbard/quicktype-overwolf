@@ -259,23 +259,154 @@ document.addEventListener('DOMContentLoaded', function () {
       importText.focus();
     }
   });
+  function copyToClipboard(text) {
+    if (typeof overwolf !== 'undefined' && overwolf.utils && typeof overwolf.utils.placeOnClipboard === 'function') {
+      try {
+        overwolf.utils.placeOnClipboard(text);
+        return true;
+      } catch (_) {}
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      try {
+        navigator.clipboard.writeText(text).catch(function () {});
+        return true;
+      } catch (_) {}
+    }
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function writeOverwolfFile(targetFile, json, callback) {
+    var encoding = (overwolf.io && overwolf.io.enums && overwolf.io.enums.eEncoding && overwolf.io.enums.eEncoding.UTF8) || 'UTF8';
+    overwolf.io.writeFileContents(targetFile, json, encoding, false, function (writeRes) {
+      if (writeRes && writeRes.success) {
+        callback(null, 'Файл сохранён: ' + targetFile + ' (и скопирован в буфер обмена)');
+      } else {
+        var err = writeRes && writeRes.error ? writeRes.error : 'ошибка записи';
+        callback(new Error(err), 'Не удалось записать файл (' + err + '). JSON скопирован в буфер обмена.');
+      }
+    });
+  }
+
+  function writeToDefaultOverwolfPath(json, callback) {
+    var folder = (overwolf.io && overwolf.io.paths && (overwolf.io.paths.desktop || overwolf.io.paths.documents)) || '';
+    var targetFile = (folder ? folder.replace(/[\\\/]+$/, '') + '\\' : '') + 'quicktype-connection.json';
+    writeOverwolfFile(targetFile, json, callback);
+  }
+
+  function saveOverwolfOrDownload(json, callback) {
+    // 2. В среде Overwolf: диалог выбора папки или рабочий стол/документы
+    if (typeof overwolf !== 'undefined' && overwolf.io && typeof overwolf.io.writeFileContents === 'function') {
+      var picker = overwolf.utils && (overwolf.utils.openNativeFolderPicker || overwolf.utils.openFolderPicker);
+      if (typeof picker === 'function') {
+        var startFolder = (overwolf.io.paths && (overwolf.io.paths.desktop || overwolf.io.paths.documents)) || '';
+        picker(startFolder, function (res) {
+          if (res && res.success && res.path) {
+            var targetFile = res.path.replace(/[\\\/]+$/, '') + '\\quicktype-connection.json';
+            writeOverwolfFile(targetFile, json, callback);
+          } else {
+            // Пользователь закрыл окно выбора — сохраняем на Рабочий стол по умолчанию
+            writeToDefaultOverwolfPath(json, callback);
+          }
+        });
+        return;
+      }
+      writeToDefaultOverwolfPath(json, callback);
+      return;
+    }
+
+    // 3. Fallback браузера: <a download>
+    try {
+      if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+        var blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.href = url;
+        link.download = 'quicktype-connection.json';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(function () {
+          link.remove();
+          URL.revokeObjectURL(url);
+        }, 1000);
+        callback(null, 'Файл скачан и скопирован в буфер обмена.');
+        return;
+      }
+    } catch (_) {}
+
+    callback(null, 'JSON скопирован в буфер обмена.');
+  }
+
+  function saveJsonToFile(json, callback) {
+    // 1. Попытка стандартного File System Access API (диалог сохранения файла)
+    if (typeof window !== 'undefined' && typeof window.showSaveFilePicker === 'function') {
+      window.showSaveFilePicker({
+        suggestedName: 'quicktype-connection.json',
+        types: [{
+          description: 'JSON файл настроек',
+          accept: { 'application/json': ['.json'] }
+        }]
+      }).then(function (handle) {
+        return handle.createWritable().then(function (writable) {
+          return writable.write(json).then(function () {
+            return writable.close();
+          });
+        });
+      }).then(function () {
+        callback(null, 'Файл сохранён и скопирован в буфер обмена.');
+      }).catch(function (err) {
+        if (err && err.name === 'AbortError') {
+          callback(null, 'Экспорт отменён (JSON скопирован в буфер обмена).');
+        } else {
+          saveOverwolfOrDownload(json, callback);
+        }
+      });
+      return;
+    }
+
+    saveOverwolfOrDownload(json, callback);
+  }
+
+  var btnCopyJson = document.getElementById('btn-copy-json');
+  if (btnCopyJson) {
+    btnCopyJson.addEventListener('click', function () {
+      var text = importText.value.trim();
+      if (!text) {
+        try {
+          text = exportConnectionProfile(readForm());
+          importText.value = text;
+        } catch (_) {}
+      }
+      if (text) {
+        copyToClipboard(text);
+        transferMessage('JSON скопирован в буфер обмена!', true);
+      }
+    });
+  }
+
   document.getElementById('btn-export-connection').addEventListener('click', function () {
-    var url;
-    var link;
     try {
       var json = exportConnectionProfile(readForm());
-      url = URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }));
-      link = document.createElement('a');
-      link.href = url;
-      link.download = 'quicktype-connection.json';
-      document.body.appendChild(link);
-      link.click();
-      transferMessage('JSON подготовлен к скачиванию из текущих значений формы.', true);
+      copyToClipboard(json);
+      if (importText) {
+        importText.value = json;
+      }
+      saveJsonToFile(json, function (err, message) {
+        transferMessage(message, !err);
+      });
     } catch (error) {
       transferMessage('Не удалось экспортировать: ' + error.message, false);
-    } finally {
-      if (link) link.remove();
-      if (url) setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     }
   });
 

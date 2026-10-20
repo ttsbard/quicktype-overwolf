@@ -483,6 +483,38 @@ test('Desktop import is atomic, preserves overlay preferences and waits for Save
   assert.equal(d.c.loadOverlayConfig().apiUrl, 'https://example.com/hook');
 });
 
+test('Desktop connection export copies to clipboard, populates textarea and saves file', () => {
+  let placed = '';
+  let writtenPath = '', writtenContent = '';
+  const d = uiContext('quicktype-overlay/desktop.js', { apiUrl: 'https://api.test/speech' }, {
+    overwolf: {
+      windows: {
+        getCurrentWindow(cb) { cb({ success: true, window: { id: 'desktop' } }); },
+        minimize() {}, close() {}
+      },
+      utils: {
+        placeOnClipboard(text) { placed = text; },
+        openNativeFolderPicker(path, cb) { cb({ success: true, path: 'C:\\Users\\User\\Downloads' }); }
+      },
+      io: {
+        paths: { desktop: 'C:\\Users\\User\\Desktop', documents: 'C:\\Users\\User\\Documents' },
+        writeFileContents(path, content, enc, uac, cb) {
+          writtenPath = path;
+          writtenContent = content;
+          cb({ success: true });
+        }
+      }
+    }
+  });
+
+  d.element('btn-export-connection').events.click();
+  assert.equal(writtenPath, 'C:\\Users\\User\\Downloads\\quicktype-connection.json');
+  assert.ok(writtenContent.includes('https://api.test/speech'));
+  assert.equal(placed, writtenContent);
+  assert.equal(d.element('connectionJson').value, writtenContent);
+  assert.match(d.element('connection-transfer-status').textContent, /Файл сохранён/);
+});
+
 test('Desktop speech check reports service accepted text upon success', async () => {
   const d = uiContext('quicktype-overlay/desktop.js');
   d.c.executeRestRequest = async () => ({ ok: true, status: 200, durationMs: 42, body: '{"ok":true}' });

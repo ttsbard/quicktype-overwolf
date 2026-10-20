@@ -55,7 +55,7 @@ for (const text of ['$&', "$'", '$`', '$$', 'a"\\\nb', 'Привет 👋']) {
   test('JSON template preserves ' + JSON.stringify(text), async () => {
     let body;
     const c = configContext({ fetch: async (url, opts) => { body = opts.body; return { ok: true, status: 200, statusText: 'OK', text: async () => '{}' }; } });
-    const result = await c.executeRestRequest(c.DEFAULT_CONFIG, text);
+    const result = await c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'http://127.0.0.1:10101/v1/speech' }, text);
     assert.equal(result.ok, true); assert.equal(JSON.parse(body).text, text);
   });
 }
@@ -63,7 +63,7 @@ test('Plain text preserves newlines, quotes and dollars', async () => {
   let body;
   const c = configContext({ fetch: async (url, opts) => { body = opts.body; return { ok: true, status: 204, text: async () => '' }; } });
   const text = 'one\n"two"\\$&';
-  await c.executeRestRequest({ ...c.DEFAULT_CONFIG, headers: '{"CONTENT-TYPE":"text/plain"}', payloadTemplate: '{text}' }, text);
+  await c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'http://127.0.0.1:10101/v1/speech', headers: '{"CONTENT-TYPE":"text/plain"}', payloadTemplate: '{text}' }, text);
   assert.equal(body, text);
 });
 test('GET query is sent before the fragment; placeholders are encoded', async () => {
@@ -78,10 +78,10 @@ test('GET query is sent before the fragment; placeholders are encoded', async ()
 test('Invalid header shapes, unsupported methods and URL schemes fail before dispatch', async () => {
   const c = configContext({ fetch: () => { throw Error('Must not dispatch'); } });
   for (const headers of ['null', '[]', '42', '"str"', '{"X":1}']) {
-    await assert.rejects(c.executeRestRequest({ ...c.DEFAULT_CONFIG, headers }, 'x'), /заголовки/);
+    await assert.rejects(c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'http://127.0.0.1:10101/v1/speech', headers }, 'x'), /заголовки/);
   }
   await assert.rejects(c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'file:///secret' }, 'x'), /http/);
-  await assert.rejects(c.executeRestRequest({ ...c.DEFAULT_CONFIG, httpMethod: 'DELETE' }, 'x'), /GET/);
+  await assert.rejects(c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'http://127.0.0.1:10101/v1/speech', httpMethod: 'DELETE' }, 'x'), /GET/);
 });
 test('IPv6 loopback recognized, misleading host rejected', () => {
   const c = configContext(); assert.equal(c.isLoopbackAddress('http://[::1]:9000'), true);
@@ -93,20 +93,20 @@ test('Native timeout ignores late callback without a second dispatch', async () 
   const c = configContext({ setTimeout: (fn, ms) => setTimeout(fn, ms === 15000 ? 15 : ms),
     overwolf: { web: { sendHttpRequest(url, method, headers, body, cb) { callback = cb; count++; } } },
     fetch: () => { throw Error('Unexpected retry'); } });
-  const result = await c.executeRestRequest(c.DEFAULT_CONFIG, 'test');
+  const result = await c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'http://127.0.0.1:10101/v1/speech' }, 'test');
   assert.equal(result.statusText, 'Timeout'); callback({ success: true, statusCode: 200 }); assert.equal(count, 1);
 });
 test('Deadline covers hanging fetch body and aborts transport', async () => {
   let signal;
   const c = configContext({ setTimeout: (fn, ms) => setTimeout(fn, ms === 15000 ? 15 : ms),
     fetch: async (url, opts) => { signal = opts.signal; return { ok: true, status: 200, text: () => new Promise(() => {}) }; } });
-  const result = await c.executeRestRequest(c.DEFAULT_CONFIG, 'test');
+  const result = await c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'http://127.0.0.1:10101/v1/speech' }, 'test');
   assert.equal(result.statusText, 'Timeout'); assert.equal(signal.aborted, true);
 });
 test('Native exceptions are reported without potentially duplicating POST', async () => {
   const c = configContext({ overwolf: { web: { sendHttpRequest() { throw Error('native failed'); } } },
     fetch: () => { throw Error('Unexpected fallback'); } });
-  const result = await c.executeRestRequest(c.DEFAULT_CONFIG, 'x'); assert.equal(result.ok, false); assert.match(result.error, /native failed/);
+  const result = await c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'http://127.0.0.1:10101/v1/speech' }, 'x'); assert.equal(result.ok, false); assert.match(result.error, /native failed/);
 });
 test('Real local HTTP server receives escaped payload and returns status/body', async t => {
   const server = http.createServer((req, res) => {
@@ -443,7 +443,7 @@ test('Desktop response details collapse on success and open on HTTP failure', as
 test('Portable connections round trip JSON and text bodies without overlay settings', () => {
   const c = configContext();
   for (const payload of ['{"text":"{text}","voice":"Алёна"}', 'say {text}\nnext', '"literal"', '["{text}"]', '']) {
-    const cfg = { ...c.DEFAULT_CONFIG, payloadTemplate: payload };
+    const cfg = { ...c.DEFAULT_CONFIG, apiUrl: 'http://127.0.0.1:10101/v1/speech', payloadTemplate: payload };
     const exported = c.exportConnectionProfile(cfg);
     const profile = JSON.parse(exported);
     assert.deepEqual(Object.keys(profile).sort(), ['apiUrl', 'headers', 'httpMethod', 'payloadTemplate']);

@@ -7,7 +7,7 @@ var BOUNDS_FIELDS = ['overlayBounds', 'overlayWidth', 'overlayHeight'];
 var REQUEST_TIMEOUT_MS = 15000;
 
 var DEFAULT_CONFIG = {
-  apiUrl: 'http://127.0.0.1:10101/v1/speech',
+  apiUrl: '',
   httpMethod: 'POST',
   headers: JSON.stringify({
     'Content-Type': 'application/json'

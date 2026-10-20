@@ -526,16 +526,20 @@ input[type="file"]::file-selector-button:hover {
   font-size: 13px;
 }
 
-.transfer-hint {
-  margin: 0 0 16px;
-}
-
 .endpoint-row .form-group {
   margin: 0;
 }
 
+.endpoint-row .form-input, .endpoint-row .form-select {
+  height: 32px;
+  min-height: 32px;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
 .method-group {
-  width: 105px;
+  width: 72px;
   flex-shrink: 0;
 }
 
@@ -590,8 +594,10 @@ summary {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.test-status-line .badge, .test-status-line .status-detail:not(:empty) {
   margin-top: 12px;
-  min-height: 26px;
 }
 
 .status-detail {
@@ -664,7 +670,7 @@ summary {
 }
 
 .connection-note {
-  margin-top: 24px;
+  margin-top: 12px;
 }
 
 .btn {

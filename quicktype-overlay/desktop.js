@@ -454,6 +454,8 @@ document.addEventListener('DOMContentLoaded', function () {
       var json = exportConnectionProfile(readForm());
       var clipboardResult = copyToClipboard(json);
       if (importText) {
+        fileReadVersion++;
+        resetImportFileName();
         importText.value = json;
       }
       var result = await new Promise(function (resolve) {

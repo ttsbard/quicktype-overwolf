@@ -822,6 +822,21 @@ test('Selecting an oversized import invalidates a previous pending read', () => 
   assert.match(d.element('connection-transfer-status').textContent, /too large/);
 });
 
+test('Export invalidates pending import reads and clears the stale filename', async () => {
+  let reader;
+  const d = uiContext('quicktype-overlay/desktop.js', { apiUrl: 'https://current.test/' }, {
+    FileReader: function () { reader = this; this.readAsText = () => {}; }
+  });
+  d.c.overwolf.utils = { placeOnClipboard() {}, openNativeFolderPicker(path, cb) { cb({ success: false }); } };
+  d.c.overwolf.io = { writeFileContents() { assert.fail('Cancelled export wrote a file'); } };
+  d.element('connectionFile').files = [{ name: 'old.json', size: 20 }];
+  d.element('connectionFile').events.change();
+  await d.element('btn-export-connection').events.click();
+  reader.result = '{"apiUrl":"https://stale.test/"}'; reader.onload();
+  assert.equal(JSON.parse(d.element('connectionJson').value).apiUrl, 'https://current.test/');
+  assert.equal(d.element('connectionFileName').textContent, 'No file selected');
+});
+
 test('Distribution file list includes every manifest icon and window resource', () => {
   const manifest = JSON.parse(source('quicktype-overlay/manifest.json'));
   const script = source('scripts/package-app.ps1');

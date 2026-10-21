@@ -73,7 +73,7 @@ body {
   flex: 1;
   min-width: 0;
   height: 20px;
-  cursor: move;
+  cursor: default;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -444,6 +444,43 @@ test('Desktop test response close button hides testResultBox and resets status b
   assert.equal(d.element('resultStatusText').textContent, '');
 });
 
+test('Desktop fits overlay settings, restores connection height and ignores stale sizing callbacks', () => {
+  const d = uiContext('quicktype-overlay/desktop.js');
+  const win = { id: 'desktop', width: 600, height: 750 };
+  const frames = [], replies = [], sizes = [];
+  let panelHeight = 580;
+  const main = {};
+  Object.defineProperty(main, 'clientHeight', { get: () => win.height - 127 });
+  d.c.document.querySelector = () => main;
+  d.element('panel-overlay').getBoundingClientRect = () => ({ height: panelHeight });
+  d.c.window.getComputedStyle = () => ({ paddingTop: '12px', paddingBottom: '6px' });
+  d.c.window.requestAnimationFrame = callback => frames.push(callback);
+  d.c.overwolf.windows.getCurrentWindow = callback => replies.push(callback);
+  d.c.overwolf.windows.changeSize = (id, width, height, callback) => {
+    assert.equal(id, 'desktop');
+    sizes.push(height);
+    Object.assign(win, { width, height });
+    callback({ success: true });
+  };
+  function finishFit() {
+    frames.shift()();
+    replies.shift()({ success: true, window: { ...win } });
+  }
+  d.element('tab-overlay').events.click();
+  frames.shift()();
+  d.element('tab-connection').events.click();
+  replies.shift()({ success: true, window: { ...win } });
+  assert.deepEqual(sizes, []);
+  finishFit();
+  d.element('tab-overlay').events.click(); finishFit();
+  assert.equal(win.height, 725);
+  panelHeight = 600;
+  d.element('overlayFont').events.pointerdown(); finishFit();
+  assert.equal(win.height, 745);
+  d.element('tab-connection').events.click(); finishFit();
+  assert.equal(win.height, 750);
+});
+
 test('Desktop titlebar minimize and close buttons call overwolf.windows methods', () => {
   let minimized = false, closed = false;
   const d = uiContext('quicktype-overlay/desktop.js', {}, {

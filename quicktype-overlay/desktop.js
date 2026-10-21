@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var themeToggleBtn = document.getElementById('themeToggleBtn');
   var savedForm;
   var statusTimer;
+  var settingsFitVersion = 0;
   var systemTheme = typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-color-scheme: light)') : null;
 
   function readPreference(key, fallback) {
@@ -100,6 +101,32 @@ document.addEventListener('DOMContentLoaded', function () {
       tab.setAttribute('aria-selected', String(active));
       tab.tabIndex = active ? 0 : -1;
       document.getElementById('panel-' + tabName).hidden = !active;
+    });
+    fitSettingsWindow();
+  }
+
+  function fitSettingsWindow() {
+    if (typeof overwolf === 'undefined' || !overwolf.windows ||
+        typeof overwolf.windows.changeSize !== 'function' || !window.requestAnimationFrame) return;
+    var version = ++settingsFitVersion;
+    window.requestAnimationFrame(function () {
+      if (version !== settingsFitVersion) return;
+      overwolf.windows.getCurrentWindow(function (result) {
+        if (version !== settingsFitVersion || !result || !result.success || !result.window) return;
+        var win = result.window;
+        var panel = document.getElementById('panel-overlay');
+        var height = 750;
+        if (!panel.hidden) {
+          var main = document.querySelector('.settings-panel');
+          var style = window.getComputedStyle(main);
+          var contentHeight = panel.getBoundingClientRect().height +
+            parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+          height = Math.max(700, Math.min(750, Math.ceil(win.height + contentHeight - main.clientHeight)));
+        }
+        if (Math.abs(win.height - height) >= 1) {
+          overwolf.windows.changeSize(win.id, win.width, height, function () {});
+        }
+      });
     });
   }
 
@@ -495,14 +522,19 @@ document.addEventListener('DOMContentLoaded', function () {
   var fontsStatus = document.getElementById('system-fonts-status');
   var fontsLoading = false;
   var fontsLoaded = false;
+  function showFontsStatus(message) {
+    setText(fontsStatus, message);
+    fitSettingsWindow();
+  }
+
   async function loadSystemFonts() {
     if (fontsLoading || fontsLoaded) return;
     if (typeof window.queryLocalFonts !== 'function') {
-      setText(fontsStatus, "This Overwolf version cannot list system fonts. The built-in list is still available.");
+      showFontsStatus("This Overwolf version cannot list system fonts. The built-in list is still available.");
       return;
     }
     fontsLoading = true;
-    setText(fontsStatus, "Loading system fonts...");
+    showFontsStatus("Loading system fonts...");
     try {
       var fonts = await window.queryLocalFonts();
       var families = Array.from(new Set(fonts.map(function (font) { return normalizeFontFamily(font.family); }).filter(Boolean)));
@@ -511,10 +543,10 @@ document.addEventListener('DOMContentLoaded', function () {
       families.forEach(ensureFontOption);
       overlayFontSelect.value = selected;
       fontsLoaded = families.length > 0;
-      setText(fontsStatus, fontsLoaded ? '' :
+      showFontsStatus(fontsLoaded ? '' :
         "No system fonts returned. The built-in list is still available.");
     } catch (error) {
-      setText(fontsStatus, error && (error.name === 'NotAllowedError' || error.name === 'SecurityError') ?
+      showFontsStatus(error && (error.name === 'NotAllowedError' || error.name === 'SecurityError') ?
         "System font access was not granted. Open the font list to try again." :
         "Could not load system fonts. Open the font list to try again.");
     } finally {
@@ -627,6 +659,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function showTestDetails(type, title, meta, body) {
     if (!testResultBox) return;
+    if (btnCloseResult) btnCloseResult.hidden = false;
     testResultBox.style.display = 'block';
     testResultBox.open = type === 'error';
     testResultBox.className = 'test-result-box ' + type;
@@ -640,6 +673,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (btnTestRequest.disabled) return;
     var text = testInput.value.trim();
     if (!text) {
+      if (btnCloseResult) btnCloseResult.hidden = false;
       if (resultBadge) resultBadge.style.display = 'none';
       if (testResultBox) testResultBox.style.display = 'none';
       setText(resultStatusText, "Enter text to test.");
@@ -650,6 +684,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var cfg = readForm();
 
     btnTestRequest.disabled = true;
+    if (btnCloseResult) btnCloseResult.hidden = true;
     if (resultBadge) {
       resultBadge.style.display = 'inline-block';
       setText(resultBadge, "Sending...");
@@ -736,6 +771,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (btnCloseResult) {
     btnCloseResult.addEventListener('click', function () {
+      btnCloseResult.hidden = true;
       if (testResultBox) testResultBox.style.display = 'none';
       if (resultBadge) {
         resultBadge.style.display = 'none';

@@ -45,15 +45,15 @@
         "show_in_taskbar": true,
         "size": {
           "width": 600,
-          "height": 800
+          "height": 750
         },
         "min_size": {
           "width": 600,
-          "height": 800
+          "height": 700
         },
         "max_size": {
           "width": 600,
-          "height": 800
+          "height": 750
         }
       },
       "overlay": {

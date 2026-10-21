@@ -8,45 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- An English-only interface with the theme button in the title bar, separated from the window controls; the language switch and localization infrastructure have been removed.
-- Automatic system font enumeration when settings open where Local Font Access API is available, with permission handling, deduplicated families and persistence of the selected font. The built-in list remains available when enumeration is unsupported or denied.
-- Two desktop settings tabs: Connection and Overlay, with keyboard navigation.
-- Portable connection JSON import/export, file selection and drag-and-drop, native file saving and clipboard copy.
-- Overlay font family and size settings with live preview.
-- Settings and close buttons in the overlay header, plus a dismiss button for errors.
-- A single README with English and Russian sections, language navigation and the keyboard layout focus workaround.
-- In-window overlay appearance preview, selected preset indicators, and persistent save footer with unsaved-change status.
-- Explanatory descriptions for behavior toggles clarifying draft preservation on Esc and submit.
-- Dynamic auto-height for overlay when typing multiline messages.
-- Independent System / Dark / Light desktop themes; the theme applies immediately and is saved separately from overlay settings.
+- Connection and Overlay settings tabs with keyboard navigation and a persistent Save bar that shows unsaved changes.
+- Connection sharing through JSON import/export, including file selection, drag-and-drop, pasted JSON, file saving and clipboard copy. Profiles contain connection settings only; overlay appearance and behavior stay unchanged.
+- Overlay font family and size controls with live preview. Installed fonts are available when the browser engine supports access and permission is granted; otherwise, the built-in font list remains available.
+- Automatic overlay height adjustment for multiline messages.
+- Settings and close buttons in the input window, plus a dismiss button for errors.
+- A light/dark theme toggle for settings. The system theme is used by default, and an explicit choice is saved independently of overlay appearance.
+- English and Russian user guides, a bilingual README and an importable TTSBard connection example.
 
 ### Changed
-- Overlay readability and focus: enlarged default input text to 18px, improved contrast and opacity, simplified to a single clear focus frame, and removed the placeholder from the input field.
-- Overlay initial height reduced to a compact 100px with calm window contour.
-- Streamlined footer shortcuts: “Enter — Send · Esc — Close” with secondary newline hint.
-- Renamed the test section to “Speech test” with a “Send” button and accurate “Service accepted the text” status.
-- Compact connection form with an HTTP method selector and URL field without redundant visible labels, collapsible headers and body template, and no default service URL for new installations.
-- Launching the app or clicking its hub icon opens the input window on the desktop or in-game; settings are accessible from the overlay.
-- Redesigned application icons and desktop titlebar, with a theme toggle in the titlebar.
-- Delayed sending feedback banner shown only when network delay exceeds 800ms.
-- Separate REST request preparation from transport execution, share appearance filtering between windows, and simplify submission state and test response rendering.
+- Launching QuickType or clicking its hub icon now opens the input window on the desktop or over a game. Settings open separately from the input window.
+- Both application windows now use English for labels, errors and statuses. User input and server responses are preserved as received.
+- The input window starts at a compact 100px height, uses larger text (18px by default), and has improved contrast for dark and light backgrounds.
+- Settings have a more compact layout, consistent spacing and refreshed icons. The window automatically fits the Overlay tab to its content, including font access messages.
+- New installations start with an empty service URL. Existing saved connections are retained. Headers and the request body template are grouped under advanced request options.
+- The Speech test section uses a Send button and reports when the service accepts the request; this does not confirm audio playback. Response details collapse on success and open on failure. The dismiss button is available beside the status even when details are collapsed.
+- Sending feedback appears only when a request takes longer than 800ms; short requests do not show a sending banner.
 
 ### Fixed
-- Open the native color picker only from its swatch, rather than from the full-width background color heading.
-- Reject empty and whitespace-only speech test input instead of sending an implicit fallback phrase.
-- Pass the content rectangle and callback in the correct positions to the Overwolf resize API.
-- Preserve automatic overlay height adjustment across programmatic resize events and avoid saving those events as manual geometry.
-- Cancel native folder export without writing a fallback file; report clipboard failure accurately and expose JSON for manual copying.
-- Discard pending import reads when a later selected file exceeds the size limit.
-- Include the manifest's ICO icon in the distribution file list.
-- Write valid ICO directory entries for the 256×256 image so all embedded icons load correctly.
-- Keep automatic height enabled when an untouched overlay is closed and reopened.
-- Prevent a pending import file read from replacing exported JSON in the import field.
-- Run regression tests in CI and before release packaging.
+- Reject empty or whitespace-only speech test input before sending a request.
+- Correct in-game window resizing and prevent automatic size changes from disabling further height adjustment. Closing and reopening an untouched overlay also preserves automatic height adjustment.
+- Open the native color picker only from its swatch.
+- Correct launcher icon rendering and include the required icon in packaged app resources.
+- Cancelling an export dialog no longer writes a fallback file. Clipboard failures expose the JSON for manual copying instead of reporting a successful copy.
+- Prevent an older import file read from overwriting a newer selection or exported JSON.
 
 ### Known limitations
-- Switching keyboard layouts while the overlay is open may lose focus. Hide the overlay, switch layouts, then show it again. No solution is currently available.
-- In-game focus, resizing, Windows scaling, native dialogs and OBS capture still require manual verification for the release candidate.
+- Switching keyboard layouts while the overlay is open may lose focus in some games. Hide the overlay, switch layouts, then show it again.
+- In-game focus and resizing, Windows scaling, native dialogs and OBS capture still require manual verification before release.
 
 ## [0.3.0] - 2026-10-11
 

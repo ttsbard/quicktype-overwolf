@@ -305,6 +305,11 @@ document.addEventListener('DOMContentLoaded', function () {
       if (lines > 1) {
         targetHeight = Math.min(240, 100 + (lines - 1) * 26);
       }
+      // Even an unchanged initial size is automatic. Closing the untouched
+      // window must not persist it as a manual height and disable auto-sizing.
+      if (!automaticSize) {
+        automaticSize = { width: win.width, height: win.height, left: win.left, top: win.top };
+      }
       if (Math.abs(win.height - targetHeight) > 6) {
         automaticSize = { width: win.width, height: targetHeight, left: win.left, top: win.top };
         overwolf.windows.changeSize(win.id, win.width, targetHeight, function () {});

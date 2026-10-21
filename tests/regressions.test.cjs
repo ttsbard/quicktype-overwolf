@@ -743,6 +743,23 @@ test('Automatic overlay height survives resize events and still saves manual mov
   assert.equal(win.height, 190);
 });
 
+test('Closing an untouched overlay preserves automatic height after reopening', () => {
+  const win = { id: 'overlay', left: 30, top: 40, width: 640, height: 100 };
+  let receive;
+  const u = uiContext('quicktype-overlay/overlay.js', {}, { overwolf: { windows: {
+    onMessageReceived: { addListener(listener) { receive = listener; } },
+    sendMessage() {}, requestOverlayFocus() {},
+    getCurrentWindow(cb) { cb({ success: true, window: { ...win } }); },
+    changeSize(id, width, height, cb) { Object.assign(win, { width, height }); cb({ success: true }); }
+  } } });
+  u.key('Escape'); u.runTimers(500);
+  assert.equal(u.c.loadOverlayConfig().overlayBounds, null);
+  receive({ id: 'focus_input_field' });
+  u.element('inputText').value = 'one\ntwo';
+  u.element('inputText').events.input();
+  assert.equal(win.height, 126);
+});
+
 test('ICO directory points to complete PNG images with matching dimensions', () => {
   const ico = fs.readFileSync(path.join(root, 'quicktype-overlay/icon.ico'));
   assert.equal(ico.readUInt16LE(0), 0);

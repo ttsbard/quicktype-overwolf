@@ -743,6 +743,26 @@ test('Automatic overlay height survives resize events and still saves manual mov
   assert.equal(win.height, 190);
 });
 
+test('ICO directory points to complete PNG images with matching dimensions', () => {
+  const ico = fs.readFileSync(path.join(root, 'quicktype-overlay/icon.ico'));
+  assert.equal(ico.readUInt16LE(0), 0);
+  assert.equal(ico.readUInt16LE(2), 1);
+  const count = ico.readUInt16LE(4);
+  assert.equal(count, 4);
+  let expectedOffset = 6 + count * 16;
+  for (let i = 0; i < count; i++) {
+    const entry = 6 + i * 16;
+    const size = ico.readUInt32LE(entry + 8), offset = ico.readUInt32LE(entry + 12);
+    assert.equal(offset, expectedOffset);
+    assert.ok(size >= 24 && offset + size <= ico.length);
+    assert.equal(ico.subarray(offset, offset + 8).toString('hex'), '89504e470d0a1a0a');
+    assert.equal(ico.readUInt32BE(offset + 16), ico[entry] || 256);
+    assert.equal(ico.readUInt32BE(offset + 20), ico[entry + 1] || 256);
+    expectedOffset += size;
+  }
+  assert.equal(expectedOffset, ico.length);
+});
+
 test('Cancelling native export does not write a fallback file', async () => {
   const d = uiContext('quicktype-overlay/desktop.js', { apiUrl: 'https://api.test/speech' });
   let writes = 0;

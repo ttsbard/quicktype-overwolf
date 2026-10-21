@@ -116,8 +116,8 @@ foreach ($item in $pngStreams) {
     $bytes = $item[1]
     $wByte = if ($sz -ge 256) { 0 } else { [byte]$sz }
     $hByte = if ($sz -ge 256) { 0 } else { [byte]$sz }
-    $bw.Write($wByte)
-    $bw.Write($hByte)
+    $bw.Write([byte]$wByte)
+    $bw.Write([byte]$hByte)
     $bw.Write([byte]0)        # Colors
     $bw.Write([byte]0)        # Reserved
     $bw.Write([uint16]1)      # Planes

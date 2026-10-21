@@ -46,4 +46,8 @@ node --check scripts/patch-overwolf-gamelist.js
 
 ## Упаковка и Git
 
-Разработка ведётся локально, Overwolf читает исходники напрямую. `scripts/package-app.ps1` выполняется только по прямому запросу пользователя; автоматическая упаковка и push запрещены. Патчер `scripts/patch-overwolf-gamelist.js` также запускается явно, с закрытым Overwolf. Коммиты — Conventional Commits после проверок.
+Разработка ведётся локально, Overwolf читает исходники напрямую. Локально `scripts/package-app.ps1` выполняется только по прямому запросу пользователя; автоматическая локальная упаковка и push запрещены. Патчер `scripts/patch-overwolf-gamelist.js` также запускается явно, с закрытым Overwolf. Коммиты — Conventional Commits после проверок.
+
+CI для push и pull request в `master` создаёт `QuickType-<version>.zip` и `QuickType-<version>.opk` и сохраняет их в артефакте `QuickType-Release-ZIP-OPK` на 14 дней. При push тега `v<version>` оба файла прикрепляются к GitHub Release; версия тега должна совпадать с `manifest.json`.
+
+ZIP содержит папку `quicktype-overlay/` для Load unpacked extension. OPK содержит файлы приложения и `manifest.json` в корне, согласно [формату Overwolf](https://dev.overwolf.com/ow-native/getting-started/release-your-app/). OPK не подписан Overwolf; создание пакета не гарантирует возможность установки в обычном клиенте. Скрипт упаковки автоматически вызывает `scripts/verify-packages.ps1`: проверяет структуру обоих архивов, обязательные ресурсы манифеста, совпадение наборов файлов и SHA-256 каждого файла с исходниками.

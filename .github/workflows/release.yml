@@ -35,7 +35,7 @@ jobs:
           Write-Host "Tag version matches manifest: $tagVersion"
           "VERSION=$tagVersion" >> $env:GITHUB_ENV
 
-      - name: Build Distribution Package
+      - name: Build and Verify ZIP and OPK
         run: |
           .\scripts\package-app.ps1
 
@@ -59,6 +59,8 @@ jobs:
               "2. В клиенте Overwolf откройте **Настройки** -> **Development Options**.",
               "3. Нажмите **Load unpacked extension** и укажите распакованную папку ``quicktype-overlay``.",
               "",
+              "Также приложен **QuickType-$ver.opk** с файлами приложения в корне. Пакет не подписан Overwolf; его установка зависит от разрешений разработчика и политики клиента.",
+              "",
               "---",
               "",
               "### Изменения в v${ver}:",
@@ -70,7 +72,10 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.zip
+          files: |
+            dist/*.zip
+            dist/*.opk
+          fail_on_unmatched_files: true
           name: QuickType ${{ github.ref_name }}
           body_path: release-notes.md
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || startsWith(github.ref_name, 'v0.') }}

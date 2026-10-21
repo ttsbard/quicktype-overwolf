@@ -1,6 +1,5 @@
-# Packages QuickType into an unpacked distribution ZIP archive.
-# Users extract this ZIP and load the resulting folder in Overwolf
-# via "Load unpacked extension".
+# Packages QuickType as an unpacked distribution ZIP and an unsigned OPK.
+# ZIP contains quicktype-overlay/; OPK contains the app files at its root.
 $ErrorActionPreference = 'Stop'
 
 $rootDir = Split-Path $PSScriptRoot -Parent
@@ -10,7 +9,7 @@ New-Item -ItemType Directory -Force -Path $dist | Out-Null
 
 $manifest = Get-Content -Raw (Join-Path $src 'manifest.json') | ConvertFrom-Json
 $appId = ($manifest.meta.name -replace '[^A-Za-z0-9]+', '-')
-$zipName = '{0}-{1}.zip' -f $appId, $manifest.meta.version
+$packageName = '{0}-{1}' -f $appId, $manifest.meta.version
 
 $files = @(
     'manifest.json',
@@ -32,18 +31,24 @@ foreach ($f in $files) {
     }
 }
 
-$stage = Join-Path $dist 'stage'
-if (Test-Path $stage) { Remove-Item -Recurse -Force $stage }
-$stageApp = Join-Path $stage 'quicktype-overlay'
-New-Item -ItemType Directory -Force -Path $stageApp | Out-Null
+Add-Type -AssemblyName System.IO.Compression.FileSystem
 
-foreach ($f in $files) {
-    Copy-Item (Join-Path $src $f) (Join-Path $stageApp $f)
+foreach ($extension in @('zip', 'opk')) {
+    $package = Join-Path $dist "$packageName.$extension"
+    if (Test-Path -LiteralPath $package) { Remove-Item -LiteralPath $package -Force }
+    $archive = [System.IO.Compression.ZipFile]::Open($package, 'Create')
+    try {
+        foreach ($f in $files) {
+            $entryName = if ($extension -eq 'zip') { "quicktype-overlay/$f" } else { $f }
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+                $archive, (Join-Path $src $f), $entryName,
+                [System.IO.Compression.CompressionLevel]::Optimal
+            ) | Out-Null
+        }
+    } finally {
+        $archive.Dispose()
+    }
+    '{0} bytes -> {1}' -f (Get-Item -LiteralPath $package).Length, $package
 }
 
-$zip = Join-Path $dist $zipName
-if (Test-Path $zip) { Remove-Item -Force $zip }
-Compress-Archive -Path $stageApp -DestinationPath $zip
-Remove-Item -Recurse -Force $stage
-
-'{0} bytes -> {1}' -f (Get-Item $zip).Length, $zip
+& (Join-Path $PSScriptRoot 'verify-packages.ps1')

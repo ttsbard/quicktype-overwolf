@@ -68,34 +68,23 @@ jobs:
           Write-Host "All PowerShell scripts passed AST validation."
 
   build-package:
-    name: Test Distribution ZIP Build
+    name: Build ZIP & OPK
     needs: validate
     runs-on: windows-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Build Distribution ZIP
+      - name: Build and Verify ZIP and OPK
         run: |
           .\scripts\package-app.ps1
-
-      - name: Verify ZIP Archive Integrity
-        run: |
-          $zipPath = Get-ChildItem -Path dist -Filter "*.zip" | Select-Object -First 1
-          if (-not $zipPath) { throw "No ZIP package was generated in dist/" }
-          if ($zipPath.Length -lt 5000) { throw "ZIP file size is unexpectedly small: $($zipPath.Length) bytes" }
-          
-          # Verify ZIP integrity and app folder
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath.FullName)
-          $manifestEntry = $zip.Entries | Where-Object { $_.FullName -like "*manifest.json" }
-          if (-not $manifestEntry) { throw "manifest.json missing inside ZIP package" }
-          $zip.Dispose()
-          Write-Host "ZIP package verified successfully: $($zipPath.Name) ($($zipPath.Length) bytes)"
 
       - name: Upload Package Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: QuickType-Release-ZIP
-          path: dist/*.zip
+          name: QuickType-Release-ZIP-OPK
+          path: |
+            dist/*.zip
+            dist/*.opk
+          if-no-files-found: error
           retention-days: 14

@@ -78,7 +78,7 @@ test('GET query is sent before the fragment; placeholders are encoded', async ()
 test('Invalid header shapes, unsupported methods and URL schemes fail before dispatch', async () => {
   const c = configContext({ fetch: () => { throw Error('Must not dispatch'); } });
   for (const headers of ['null', '[]', '42', '"str"', '{"X":1}']) {
-    await assert.rejects(c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'http://127.0.0.1:10101/v1/speech', headers }, 'x'), /заголовки/);
+    await assert.rejects(c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'http://127.0.0.1:10101/v1/speech', headers }, 'x'), /headers/);
   }
   await assert.rejects(c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'file:///secret' }, 'x'), /http/);
   await assert.rejects(c.executeRestRequest({ ...c.DEFAULT_CONFIG, apiUrl: 'http://127.0.0.1:10101/v1/speech', httpMethod: 'DELETE' }, 'x'), /GET/);
@@ -226,7 +226,7 @@ test('Legacy configuration survives settings migration and concurrent geometry w
 test('Missing IPC reply unlocks input without deleting the draft', () => {
   const u = uiContext('quicktype-overlay/overlay.js'); u.element('inputText').value = 'pending'; u.key('Enter');
   u.runTimers(16000); assert.equal(u.element('inputText').readOnly, false); assert.equal(u.element('inputText').value, 'pending');
-  assert.match(u.element('hudStatusText').textContent, /контроллера/);
+  assert.match(u.element('hudStatusText').textContent, /controller/);
 });
 test('Background forwards preview and request IDs using saved config', async () => {
   let listener; const sent = []; let submitted;
@@ -361,7 +361,7 @@ test('Header close preserves the draft; error dismiss preserves text and permits
   input.value = 'Черновик';
   u.key('Enter');
   const request = u.messages.find(m => m[1] === 'submit_text')[2];
-  u.ipc({ id: 'rest_result', content: { ok: false, requestId: request.requestId, error: 'Ошибка' } });
+  u.ipc({ id: 'rest_result', content: { ok: false, requestId: request.requestId, error: "Error" } });
   assert.equal(u.element('btn-close-error').hidden, false);
   u.element('btn-close-error').events.click();
   assert.equal(u.element('hudStatusBanner').style.display, 'none');
@@ -380,7 +380,7 @@ test('Overlay typography previews without saving, persists on Save and restores 
   d.element('overlayFont').events.change();
   d.element('overlayFontSize').value = '24';
   d.element('overlayFontSize').events.input();
-  assert.equal(d.element('dirty-indicator').textContent, 'Применено · нажмите «Сохранить»');
+  assert.equal(d.element('dirty-indicator').textContent, "Preview applied · click Save");
   assert.equal(d.c.loadOverlayConfig().overlayFontSize, 18);
   const preview = d.messages.at(-1)[2];
   const u = uiContext('quicktype-overlay/overlay.js');
@@ -391,7 +391,7 @@ test('Overlay typography previews without saving, persists on Save and restores 
   const saved = d.c.loadOverlayConfig();
   assert.equal(saved.overlayFont, 'Consolas');
   assert.equal(saved.overlayFontSize, 24);
-  assert.equal(d.element('dirty-indicator').textContent, 'Все изменения сохранены');
+  assert.equal(d.element('dirty-indicator').textContent, "All changes saved");
   const reopened = uiContext('quicktype-overlay/desktop.js', saved);
   assert.equal(reopened.element('overlayFont').value, 'Consolas');
   assert.equal(Number(reopened.element('overlayFontSize').value), 24);
@@ -438,7 +438,7 @@ test('Desktop test response close button hides testResultBox and resets status b
   // Click close button
   d.element('btn-close-result').events.click();
   assert.equal(box.style.display, 'none');
-  assert.equal(badge.textContent, 'Готов к тесту');
+  assert.equal(badge.textContent, "Ready to test");
   assert.equal(d.element('resultStatusText').textContent, '');
 });
 
@@ -502,14 +502,14 @@ test('Desktop system theme follows OS changes independently of saved overlay app
 test('Desktop theme toggle button toggles between dark and light themes', () => {
   const d = uiContext('quicktype-overlay/desktop.js');
   assert.equal(d.element('root').attributes['data-theme'], 'dark');
-  assert.equal(d.element('themeToggleBtn').title, 'Переключить на светлую тему');
+  assert.equal(d.element('themeToggleBtn').title, "Switch to light theme");
   d.element('themeToggleBtn').events.click();
   assert.equal(d.element('root').attributes['data-theme'], 'light');
-  assert.equal(d.element('themeToggleBtn').title, 'Переключить на тёмную тему');
+  assert.equal(d.element('themeToggleBtn').title, "Switch to dark theme");
   assert.equal(d.c.localStorage.getItem('quicktype_desktop_theme'), 'light');
   d.element('themeToggleBtn').events.click();
   assert.equal(d.element('root').attributes['data-theme'], 'dark');
-  assert.equal(d.element('themeToggleBtn').title, 'Переключить на светлую тему');
+  assert.equal(d.element('themeToggleBtn').title, "Switch to light theme");
   assert.equal(d.c.localStorage.getItem('quicktype_desktop_theme'), 'dark');
 });
 
@@ -522,7 +522,7 @@ test('Desktop invalid headers reveal their editor from the overlay tab and prese
   assert.equal(d.element('panel-connection').hidden, false);
   assert.equal(d.element('tab-connection').attributes['aria-selected'], 'true');
   assert.equal(d.element('requestDetails').open, true);
-  assert.match(d.element('save-indicator').textContent, /Ошибка в JSON/);
+  assert.match(d.element('save-indicator').textContent, /Invalid headers JSON/);
   assert.doesNotThrow(() => JSON.parse(d.c.loadOverlayConfig().headers));
 });
 
@@ -538,8 +538,8 @@ test('Desktop response details collapse on success and open on HTTP failure', as
   assert.equal(d.element('resultBoxBody').textContent, 'Bad request');
   d.c.executeRestRequest = async () => ({ ok: false, status: 404, durationMs: 20, body: '', error: 'Сервер вернул HTTP 404' });
   await d.element('btn-test-request').events.click();
-  assert.match(d.element('resultStatusText').textContent, /Эндпоинт не найден/);
-  assert.equal(d.element('resultBoxBody').textContent, '(Тело ответа пустое)');
+  assert.match(d.element('resultStatusText').textContent, /Endpoint not found/);
+  assert.equal(d.element('resultBoxBody').textContent, "(Response body is empty)");
 });
 
 test('Portable connections round trip JSON and text bodies without overlay settings', () => {
@@ -606,7 +606,7 @@ test('Desktop import file reads file content and updates filename display', () =
   assert.match(d.element('connection-transfer-status').textContent, /profile\.json/);
 
   d.element('connectionJson').events.input();
-  assert.equal(d.element('connectionFileName').textContent, 'Файл не выбран');
+  assert.equal(d.element('connectionFileName').textContent, "No file selected");
   assert.ok(!d.element('connectionFileName').classList.contains('has-file'));
 });
 
@@ -639,7 +639,7 @@ test('Desktop connection export copies to clipboard, populates textarea and save
   assert.ok(writtenContent.includes('https://api.test/speech'));
   assert.equal(placed, writtenContent);
   assert.equal(d.element('connectionJson').value, writtenContent);
-  assert.match(d.element('connection-transfer-status').textContent, /Файл сохранён/);
+  assert.match(d.element('connection-transfer-status').textContent, /File saved/);
 });
 
 test('Desktop speech check reports service accepted text upon success', async () => {
@@ -647,8 +647,8 @@ test('Desktop speech check reports service accepted text upon success', async ()
   d.element('testInput').value = 'Проверка';
   d.c.executeRestRequest = async () => ({ ok: true, status: 200, durationMs: 42, body: '{"ok":true}' });
   await d.element('btn-test-request').events.click();
-  assert.match(d.element('resultStatusText').textContent, /Сервис принял текст/);
-  assert.match(d.element('resultBoxTitle').textContent, /Сервис принял текст/);
+  assert.match(d.element('resultStatusText').textContent, /Service accepted the text/);
+  assert.match(d.element('resultBoxTitle').textContent, /Service accepted the text/);
   assert.equal(d.element('resultBadge').textContent, 'HTTP 200');
 });
 
@@ -665,12 +665,12 @@ test('Desktop speech test rejects empty and whitespace input for click and Enter
     d.key('Enter');
     assert.equal(sent.length, 0);
     assert.equal(d.element('btn-test-request').disabled, false);
-    assert.match(d.element('resultStatusText').textContent, /Введите текст/);
+    assert.match(d.element('resultStatusText').textContent, /Enter text/);
   }
   d.element('testInput').value = '  Привет  ';
   await d.element('btn-test-request').events.click();
   assert.deepEqual(sent, ['Привет']);
-  assert.match(d.element('resultStatusText').textContent, /Сервис принял текст/);
+  assert.match(d.element('resultStatusText').textContent, /Service accepted the text/);
   d.element('testInput').value = '';
   await d.element('btn-test-request').events.click();
   assert.equal(d.element('resultBadge').style.display, 'none');
@@ -702,7 +702,7 @@ test('Overlay default height is compact 100px and error defaults to retry prompt
   u.key('Enter');
   const reqId = u.messages.find(m => m[1] === 'submit_text')[2].requestId;
   u.ipc({ id: 'rest_result', content: { ok: false, requestId: reqId } });
-  assert.equal(u.element('hudStatusText').textContent, 'Не удалось отправить. Enter — повторить');
+  assert.equal(u.element('hudStatusText').textContent, "Could not send. Enter — retry");
 });
 
 test('Overlay shows sending feedback banner on delay greater than 800ms', () => {
@@ -712,7 +712,7 @@ test('Overlay shows sending feedback banner on delay greater than 800ms', () => 
   assert.equal(u.element('hudStatusBanner').style.display, 'none');
   u.runTimers(800);
   assert.equal(u.element('hudStatusBanner').style.display, 'flex');
-  assert.equal(u.element('hudStatusText').textContent, 'Отправка...');
+  assert.equal(u.element('hudStatusText').textContent, "Sending...");
 });
 
 test('Automatic overlay height survives resize events and still saves manual moves and resizes', () => {
@@ -748,7 +748,7 @@ test('Cancelling native export does not write a fallback file', async () => {
   d.c.overwolf.io = { paths: { desktop: 'C:\\Desktop' }, writeFileContents() { writes++; } };
   await d.element('btn-export-connection').events.click();
   assert.equal(writes, 0);
-  assert.match(d.element('connection-transfer-status').textContent, /Экспорт отменён/);
+  assert.match(d.element('connection-transfer-status').textContent, /Export cancelled/);
 });
 
 test('Rejected clipboard write exposes exported JSON without claiming it was copied', async () => {
@@ -758,8 +758,8 @@ test('Rejected clipboard write exposes exported JSON without claiming it was cop
   d.c.overwolf.utils = { openNativeFolderPicker(path, cb) { cb({ success: false }); } };
   d.c.overwolf.io = { writeFileContents() { assert.fail('Cancelled export wrote a file'); } };
   await d.element('btn-export-connection').events.click();
-  assert.match(d.element('connection-transfer-status').textContent, /Не удалось скопировать/);
-  assert.doesNotMatch(d.element('connection-transfer-status').textContent, /JSON скопирован/);
+  assert.match(d.element('connection-transfer-status').textContent, /Could not copy/);
+  assert.doesNotMatch(d.element('connection-transfer-status').textContent, /JSON copied/);
   assert.equal(d.element('connection-import').hidden, false);
   assert.equal(JSON.parse(d.element('connectionJson').value).apiUrl, 'https://api.test/speech');
 });
@@ -769,7 +769,7 @@ test('Export without a system directory never writes a relative file path', asyn
   d.c.overwolf.utils = { placeOnClipboard() {} };
   d.c.overwolf.io = { writeFileContents() { assert.fail('Export wrote to an unknown directory'); } };
   await d.element('btn-export-connection').events.click();
-  assert.match(d.element('connection-transfer-status').textContent, /Папка для экспорта недоступна/);
+  assert.match(d.element('connection-transfer-status').textContent, /Export folder is unavailable/);
 });
 
 test('Selecting an oversized import invalidates a previous pending read', () => {
@@ -780,7 +780,7 @@ test('Selecting an oversized import invalidates a previous pending read', () => 
   file.files = [{ name: 'large.json', size: 1024 * 1024 + 1 }]; file.events.change();
   reader.result = '{"apiUrl":"https://stale.test"}'; reader.onload();
   assert.equal(d.element('connectionJson').value, '');
-  assert.match(d.element('connection-transfer-status').textContent, /слишком большой/);
+  assert.match(d.element('connection-transfer-status').textContent, /too large/);
 });
 
 test('Distribution file list includes every manifest icon and window resource', () => {
@@ -791,6 +791,27 @@ test('Distribution file list includes every manifest icon and window resource', 
     ...Object.values(manifest.data.windows).map(w => w.file)]) {
     assert.ok(files.includes("'" + resource + "'"), resource + ' missing from distribution');
   }
+});
+
+test('English interface ignores legacy language preference and preserves user and server text', async () => {
+  const values = new Map([['quicktype_ui_language', 'ru']]);
+  const d = uiContext('quicktype-overlay/desktop.js', {}, {
+    localStorage: { getItem: key => values.get(key) || null, setItem: (key, value) => values.set(key, value) }
+  });
+  assert.equal(d.element('dirty-indicator').textContent, 'All changes saved');
+  d.element('testInput').value = 'Пользовательский текст';
+  let sent;
+  d.c.executeRestRequest = async (cfg, text) => {
+    sent = text;
+    return { ok: true, status: 200, durationMs: 1, body: 'Ответ сервера' };
+  };
+  await d.element('btn-test-request').events.click();
+  assert.equal(sent, 'Пользовательский текст');
+  assert.equal(d.element('resultBoxBody').textContent, 'Ответ сервера');
+  assert.match(d.element('resultStatusText').textContent, /Service accepted/);
+  assert.doesNotMatch(source('quicktype-overlay/desktop.html'), /id="uiLanguage"|<label for="(?:httpMethod|apiUrl)"/);
+  assert.match(source('quicktype-overlay/desktop.html'), /aria-label="HTTP method"/);
+  assert.match(source('quicktype-overlay/desktop.html'), /aria-label="Service URL"/);
 });
 
 

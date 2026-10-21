@@ -88,13 +88,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (type === 'sending') {
       hudStatusBanner.style.display = 'none';
-      hudStatusText.textContent = '';
+      setText(hudStatusText, '');
       hudStatusBanner.className = 'hud-status-banner';
       // Короткий статус только при задержке отправки
       sendingDelayTimer = setTimeout(function () {
         if (activeRequest && overlayVisible) {
           hudStatusBanner.className = 'hud-status-banner info';
-          hudStatusText.textContent = 'Отправка...';
+          setText(hudStatusText, "Sending...");
           hudStatusBanner.style.display = 'flex';
         }
       }, 800);
@@ -103,14 +103,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (type !== 'error') {
       hudStatusBanner.style.display = 'none';
-      hudStatusText.textContent = '';
+      setText(hudStatusText, '');
       hudStatusBanner.className = 'hud-status-banner';
       return;
     }
 
     // Отображаем исключительно сообщение об ошибке (без цветных подсветок окна)
     hudStatusBanner.className = 'hud-status-banner error';
-    hudStatusText.textContent = text || 'Не удалось отправить. Enter — повторить';
+    setText(hudStatusText, text || "Could not send. Enter — retry");
     hudStatusBanner.style.display = 'flex';
   }
 
@@ -271,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var rect = { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
       overwolf.windows.dragResize(winId, edge, rect, function (result) {
         if (result && result.success === false) {
-          setStatus('error', 'Не удалось изменить размер окна: ' + (result.error || 'ошибка Overwolf'));
+          setStatus('error', "Could not resize the window: " + (result.error || "Overwolf error"));
           return;
         }
         saveCurrentBounds();
@@ -350,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }, 350);
     } else {
       clearActiveRequest();
-      setStatus('error', content.error || 'Не удалось отправить. Enter — повторить');
+      setStatus('error', content.error || "Could not send. Enter — retry");
       if (overlayVisible) focusField();
     }
   }
@@ -431,17 +431,17 @@ document.addEventListener('DOMContentLoaded', function () {
       activeRequest = { id: requestId, text: inputField.value,
         clear: config.clearOnSubmit !== false, close: config.closeOnSubmit !== false };
       inputField.readOnly = true;
-      setStatus('sending', 'Отправка...');
+      setStatus('sending', "Sending...");
       // Also recover if the controller reloads or an IPC reply is lost.
       activeRequest.timer = setTimeout(function () {
         handleRestResult({ ok: false, requestId: requestId,
-          error: 'Нет ответа контроллера. Сервер мог принять запрос; проверьте результат перед повтором.' });
+          error: "No controller response. The server may have accepted the request; check before retrying." });
       }, REQUEST_TIMEOUT_MS + 1000);
 
       if (typeof overwolf !== 'undefined') {
         overwolf.windows.sendMessage('background', 'submit_text', { text: text, requestId: requestId }, function (result) {
           if (result && result.success === false) {
-            handleRestResult({ ok: false, requestId: requestId, error: result.error || 'Не удалось передать запрос контроллеру' });
+            handleRestResult({ ok: false, requestId: requestId, error: result.error || "Could not pass the request to the controller" });
           }
         });
       } else {

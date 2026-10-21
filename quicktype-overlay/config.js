@@ -7,6 +7,16 @@ var BOUNDS_FIELDS = ['overlayBounds', 'overlayWidth', 'overlayHeight'];
 var REQUEST_TIMEOUT_MS = 15000;
 var OVERLAY_APPEARANCE_FIELDS = ['overlayOpacity', 'overlayBgColor', 'showHints', 'overlayFont', 'overlayFontSize'];
 
+function setText(element, text) {
+  if (element) element.textContent = text;
+}
+
+function setControlAttribute(element, name, value) {
+  if (!element) return;
+  element.setAttribute(name, value);
+  if (name === 'title') element.title = value;
+}
+
 function getOverlayAppearance(config) {
   var appearance = {};
   OVERLAY_APPEARANCE_FIELDS.forEach(function (key) {
@@ -68,7 +78,7 @@ function loadOverlayConfig() {
         if ((key !== BOUNDS_KEY || BOUNDS_FIELDS.indexOf(field) !== -1) &&
             Object.prototype.hasOwnProperty.call(parsed, field)) config[field] = parsed[field];
       });
-    } catch (error) { console.error('Ошибка загрузки конфига:', error); }
+    } catch (error) { console.error("Could not load settings:", error); }
   });
   return config;
 }
@@ -97,7 +107,7 @@ function updateOverlayConfig(patch) {
     if (hasBounds) localStorage.setItem(BOUNDS_KEY, JSON.stringify(bounds));
     return true;
   } catch (error) {
-    console.error('Ошибка сохранения конфига:', error);
+    console.error("Could not save settings:", error);
     return false;
   }
 }
@@ -109,11 +119,11 @@ function saveOverlayConfig(config) {
 function parseRequestHeaders(raw) {
   var headers = raw ? JSON.parse(raw) : {};
   if (!headers || typeof headers !== 'object' || Array.isArray(headers)) {
-    throw new Error('Заголовки должны быть JSON-объектом');
+    throw new Error("Headers must be a JSON object");
   }
   Object.keys(headers).forEach(function (key) {
     if (typeof headers[key] !== 'string') {
-      throw new Error('Значение заголовка ' + key + ' должно быть строкой');
+      throw new Error("Header " + key + " must have a string value");
     }
   });
   return headers;
@@ -123,36 +133,36 @@ function parseRequestHeaders(raw) {
 function parseConnectionProfile(raw) {
   var profile;
   try { profile = JSON.parse(raw.replace(/^\uFEFF/, '')); }
-  catch (_) { throw new Error('Некорректный JSON. Проверьте кавычки, запятые и скобки.'); }
+  catch (_) { throw new Error("Invalid JSON. Check quotes, commas and brackets."); }
   if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
-    throw new Error('Настройки подключения должны быть JSON-объектом.');
+    throw new Error("Connection settings must be a JSON object.");
   }
   var fields = ['apiUrl', 'httpMethod', 'headers', 'payloadTemplate'];
   Object.keys(profile).forEach(function (key) {
-    if (fields.indexOf(key) === -1) throw new Error('Неизвестное поле: ' + key);
+    if (fields.indexOf(key) === -1) throw new Error("Unknown field: " + key);
   });
   if (typeof profile.apiUrl !== 'string' || !profile.apiUrl.trim()) {
-    throw new Error('Укажите apiUrl — адрес сервиса.');
+    throw new Error("Specify apiUrl — the service address.");
   }
   var target;
   try { target = new URL(profile.apiUrl.trim()); }
-  catch (_) { throw new Error('apiUrl должен содержать полный URL с http:// или https://.'); }
+  catch (_) { throw new Error("apiUrl must be a full URL starting with http:// or https://."); }
   if (target.protocol !== 'http:' && target.protocol !== 'https:') {
-    throw new Error('apiUrl должен использовать http или https.');
+    throw new Error("apiUrl must use http or https.");
   }
   var method = profile.httpMethod === undefined ? 'POST' : profile.httpMethod;
   if (typeof method !== 'string' || ['GET', 'POST', 'PUT'].indexOf(method.toUpperCase()) === -1) {
-    throw new Error('httpMethod: поддерживаются GET, POST и PUT.');
+    throw new Error("httpMethod: supported methods are GET, POST and PUT.");
   }
   var headers = profile.headers === undefined ? JSON.parse(DEFAULT_CONFIG.headers) : profile.headers;
   if (!headers || typeof headers !== 'object' || Array.isArray(headers)) {
-    throw new Error('headers должен быть объектом со строковыми значениями.');
+    throw new Error("headers must be an object with string values.");
   }
   var headersText = JSON.stringify(headers, null, 2);
   parseRequestHeaders(headersText);
   var payload = profile.payloadTemplate === undefined ? JSON.parse(DEFAULT_CONFIG.payloadTemplate) : profile.payloadTemplate;
   if (typeof payload !== 'string' && (!payload || typeof payload !== 'object')) {
-    throw new Error('payloadTemplate должен быть JSON-объектом, массивом или строкой.');
+    throw new Error("payloadTemplate must be a JSON object, array or string.");
   }
   return { apiUrl: profile.apiUrl.trim(), httpMethod: method.toUpperCase(), headers: headersText,
     payloadTemplate: typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2) };
@@ -184,7 +194,7 @@ function isLoopbackAddress(targetUrl) {
 function withRequestDeadline(operation, onTimeout) {
   return new Promise(function (resolve, reject) {
     var timer = setTimeout(function () {
-      var error = new Error('Превышено время ожидания ответа (15 секунд). Сервер мог принять запрос; проверьте результат перед повтором.');
+      var error = new Error("Response timed out (15 seconds). The server may have accepted the request; check before retrying.");
       error.name = 'TimeoutError';
       reject(error);
       if (onTimeout) onTimeout();
@@ -202,16 +212,16 @@ function withRequestDeadline(operation, onTimeout) {
 // Build and validate once, before choosing a transport or starting its deadline.
 function prepareRestRequest(config, inputText) {
   var url = (config.apiUrl || '').trim();
-  if (!url) throw new Error('URL эндпоинта не задан');
+  if (!url) throw new Error("Endpoint URL is not configured");
   var method = (config.httpMethod || 'POST').toUpperCase();
   if (['GET', 'POST', 'PUT'].indexOf(method) === -1) {
-    throw new Error('Поддерживаются методы GET, POST и PUT');
+    throw new Error("Supported methods are GET, POST and PUT");
   }
   var parsedHeaders;
   try {
     parsedHeaders = parseRequestHeaders(config.headers);
   } catch (error) {
-    throw new Error('Некорректные заголовки: ' + error.message);
+    throw new Error("Invalid headers: " + error.message);
   }
   inputText = String(inputText);
   if (method === 'GET' && url.includes('{text}')) {
@@ -219,7 +229,7 @@ function prepareRestRequest(config, inputText) {
   }
   var target = new URL(url);
   if (target.protocol !== 'http:' && target.protocol !== 'https:') {
-    throw new Error('URL должен использовать http или https');
+    throw new Error("URL must use http or https");
   }
   if (method === 'GET' && !(config.apiUrl || '').includes('{text}')) {
     target.searchParams.append('text', inputText);
@@ -235,7 +245,7 @@ function prepareRestRequest(config, inputText) {
     bodyString = template.replace(/\{text\}/g, function () { return replacement; });
     if (isJson) {
       try { JSON.parse(bodyString); }
-      catch (error) { throw new Error('Сформированное тело запроса не является валидным JSON: ' + error.message); }
+      catch (error) { throw new Error("The generated request body is not valid JSON: " + error.message); }
     }
   }
 
@@ -266,7 +276,7 @@ async function executeRestRequest(config, inputText) {
         ok = !!result && result.success !== false && status >= 200 && status < 300;
         statusText = ok ? 'OK' : 'Error';
         body = result && typeof result.data === 'string' ? result.data : '';
-        error = ok ? null : (result && result.error || (status ? 'Сервер вернул HTTP ' + status : 'Не удалось подключиться к локальному серверу. Проверьте адрес, порт и запуск сервера.'));
+        error = ok ? null : (result && result.error || (status ? "Server returned HTTP " + status : "Could not connect to the local server. Check the address, port and whether it is running."));
       } else {
         var options = { method: method, headers: parsedHeaders };
         if (controller) options.signal = controller.signal;
@@ -276,7 +286,7 @@ async function executeRestRequest(config, inputText) {
         status = response.status;
         statusText = response.statusText;
         ok = response.ok;
-        error = ok ? null : 'Сервер вернул HTTP ' + status + (statusText ? ' ' + statusText : '');
+        error = ok ? null : "Server returned HTTP " + status + (statusText ? ' ' + statusText : '');
       }
       return { ok: ok, status: status, statusText: statusText, body: body,
         error: error, durationMs: Math.round(performance.now() - started), source: source };
@@ -286,8 +296,8 @@ async function executeRestRequest(config, inputText) {
     return { ok: false, status: 0, statusText: error.name === 'TimeoutError' ? 'Timeout' : 'Network Error',
       body: '', durationMs: Math.round(performance.now() - started), source: source,
       error: error.name === 'TimeoutError' ? error.message :
-        'Сбой запроса: ' + error.message + '. Проверьте адрес и доступность сервера' +
-        (nativeRequest ? '.' : ', а также разрешения CORS на сервере.') };
+        "Request failed: " + error.message + ". Check the address and server availability" +
+        (nativeRequest ? '.' : " and server CORS permissions.") };
   }
 }
 

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru" data-theme="dark">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="utf-8">
     <title>QuickType</title>
@@ -29,28 +29,9 @@
         <span>QuickType</span>
       </div>
       <div class="window-controls">
-        <button type="button" class="window-control-btn" id="btnWindowMinimize" title="Свернуть" aria-label="Свернуть">
-          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
-            <path d="M3 8h10"/>
-          </svg>
-        </button>
-        <button type="button" class="window-control-btn close" id="btnWindowClose" title="Закрыть" aria-label="Закрыть">
-          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
-            <path d="m3 3 10 10m0-10-10 10"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
-    <div class="main-container">
-      <div class="settings-tabs-bar">
-        <nav class="settings-tabs" role="tablist" aria-label="Разделы настроек">
-          <button type="button" id="tab-connection" class="settings-tab" role="tab" aria-selected="true" aria-controls="panel-connection">Подключение</button>
-          <button type="button" id="tab-overlay" class="settings-tab" role="tab" aria-selected="false" aria-controls="panel-overlay" tabindex="-1">Оверлей</button>
-        </nav>
-        <div class="tabs-theme-wrap">
-          <button type="button" id="themeToggleBtn" class="theme-toggle-btn" title="Переключить на светлую тему" aria-label="Переключить на светлую тему">
-            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <div class="titlebar-theme">
+          <button type="button" id="themeToggleBtn" class="theme-toggle-btn" title="Switch to light theme" aria-label="Switch to light theme">
+            <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="5"></circle>
               <line x1="12" y1="1" x2="12" y2="3"></line>
               <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -61,16 +42,36 @@
               <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
               <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
             </svg>
-            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
             </svg>
           </button>
           <select id="appTheme" class="sr-only" aria-hidden="true" tabindex="-1">
-            <option value="system">Системная</option>
-            <option value="light">Светлая</option>
-            <option value="dark">Тёмная</option>
+            <option value="system">System</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
           </select>
         </div>
+        <button type="button" class="window-control-btn" id="btnWindowMinimize" title="Minimize" aria-label="Minimize">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+            <path d="M3 8h10"/>
+          </svg>
+        </button>
+        <button type="button" class="window-control-btn close" id="btnWindowClose" title="Close" aria-label="Close">
+          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true">
+            <path d="m3 3 10 10m0-10-10 10"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="main-container">
+      <div class="settings-tabs-bar">
+        <nav class="settings-tabs" role="tablist" aria-label="Settings sections">
+          <button type="button" id="tab-connection" class="settings-tab" role="tab" aria-selected="true" aria-controls="panel-connection">Connection</button>
+          <button type="button" id="tab-overlay" class="settings-tab" role="tab" aria-selected="false" aria-controls="panel-overlay" tabindex="-1">Overlay</button>
+        </nav>
+
       </div>
 
       <!-- Содержимое активной вкладки прокручивается независимо от панели сохранения -->
@@ -81,15 +82,15 @@
           <section class="settings-section">
             <div class="section-header connection-header">
               <span class="header-indicator purple"></span>
-              <h2 class="section-title">Подключение</h2>
+              <h2 class="section-title">Connection</h2>
               <div class="connection-actions">
-                <button type="button" id="btn-import-connection" class="btn btn-ghost btn-icon" title="Импорт JSON" aria-label="Импорт JSON" aria-expanded="false" aria-controls="connection-import">
+                <button type="button" id="btn-import-connection" class="btn btn-ghost btn-icon" title="Import JSON" aria-label="Import JSON" aria-expanded="false" aria-controls="connection-import">
                   <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true">
                     <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
                     <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
                   </svg>
                 </button>
-                <button type="button" id="btn-export-connection" class="btn btn-ghost btn-icon" title="Экспорт JSON" aria-label="Экспорт JSON">
+                <button type="button" id="btn-export-connection" class="btn btn-ghost btn-icon" title="Export JSON" aria-label="Export JSON">
                   <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" aria-hidden="true">
                     <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
                     <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
@@ -100,59 +101,57 @@
 
             <div id="connection-import" class="connection-import" hidden>
               <div class="form-group">
-                <label for="connectionFile" id="connectionFileLabel">Загрузить файл JSON</label>
+                <label for="connectionFile" id="connectionFileLabel">Load a JSON file</label>
                 <div class="file-picker" id="connectionFilePicker">
                   <input type="file" id="connectionFile" class="file-picker-input" accept=".json,application/json" aria-labelledby="connectionFileLabel">
-                  <label for="connectionFile" class="file-picker-trigger" title="Выберите файл JSON или перетащите его сюда">
+                  <label for="connectionFile" class="file-picker-trigger" title="Choose a JSON file or drop it here">
                     <span class="file-picker-btn">
                       <svg class="file-picker-icon" viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true">
                         <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
                         <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V10.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
                       </svg>
-                      <span>Выбрать файл</span>
+                      <span>Choose file</span>
                     </span>
-                    <span class="file-picker-name" id="connectionFileName">Файл не выбран</span>
+                    <span class="file-picker-name" id="connectionFileName">No file selected</span>
                   </label>
                 </div>
               </div>
               <div class="form-group">
-                <label for="connectionJson">Или вставить JSON</label>
-                <textarea id="connectionJson" class="form-textarea code-font" rows="7" spellcheck="false" placeholder='{"apiUrl":"http://127.0.0.1:10101/v1/speech","httpMethod":"POST","headers":{"Content-Type":"application/json"},"payloadTemplate":{"text":"{text}"}}'></textarea>
+                <label for="connectionJson">Or paste JSON</label>
+                <textarea id="connectionJson" class="form-textarea code-font" rows="7" spellcheck="false"></textarea>
               </div>
-              <p class="field-hint">Импорт заменит параметры подключения в форме. Проверьте их и нажмите «Сохранить».</p>
+              <p class="field-hint">Import replaces the connection in this form. Review it and click Save.</p>
               <div class="connection-actions import-actions">
-                <button type="button" id="btn-apply-connection" class="btn btn-action">Применить JSON</button>
-                <button type="button" id="btn-cancel-import" class="btn btn-ghost">Закрыть</button>
+                <button type="button" id="btn-apply-connection" class="btn btn-action">Apply</button>
+                <button type="button" id="btn-cancel-import" class="btn btn-ghost">Close</button>
               </div>
             </div>
             <p id="connection-transfer-status" class="status-detail transfer-status" role="status" aria-live="polite"></p>
 
             <div class="endpoint-row">
               <div class="form-group method-group">
-                <label for="httpMethod">Метод</label>
-                <select id="httpMethod" class="form-select">
+                <select id="httpMethod" class="form-select" aria-label="HTTP method">
                   <option value="POST">POST</option><option value="GET">GET</option><option value="PUT">PUT</option>
                 </select>
               </div>
               <div class="form-group endpoint-group">
-                <label for="apiUrl">Адрес (URL)</label>
-                <input type="text" id="apiUrl" class="form-input" placeholder="Введите URL" spellcheck="false">
+                <input type="text" id="apiUrl" class="form-input" aria-label="Service URL" placeholder="Enter a URL" spellcheck="false">
               </div>
             </div>
 
             <details id="requestDetails" class="disclosure">
-              <summary>Дополнительные параметры запроса</summary>
+              <summary>Advanced request options</summary>
               <div class="disclosure-content">
                 <div class="form-group">
-                  <label for="headers">Заголовки (JSON)</label>
+                  <label for="headers">Headers (JSON)</label>
                   <textarea id="headers" class="form-textarea code-font" rows="3" spellcheck="false"></textarea>
-                  <span class="field-hint">JSON-объект заголовков (например, <code>Authorization</code>, <code>Content-Type</code>)</span>
+                  <span class="field-hint"><span>JSON header object (for example,</span> <code>Authorization</code>, <code>Content-Type</code>)</span>
                 </div>
 
                 <div class="form-group">
-                  <label for="payloadTemplate">Шаблон тела запроса</label>
+                  <label for="payloadTemplate">Request body template</label>
                   <textarea id="payloadTemplate" class="form-textarea code-font" rows="3" spellcheck="false"></textarea>
-                  <span class="field-hint">Плейсхолдер <code>{text}</code> заменится на текст из оверлея</span>
+                  <span class="field-hint"><span>The placeholder</span> <code>{text}</code> <span>is replaced with text from the overlay</span></span>
                 </div>
               </div>
             </details>
@@ -164,27 +163,27 @@
           <section class="settings-section">
             <div class="section-header">
               <span class="header-indicator purple"></span>
-              <h2 class="section-title">Проверка озвучивания</h2>
+              <h2 class="section-title">Speech test</h2>
             </div>
 
             <div class="test-row">
-              <input type="text" id="testInput" aria-label="Текст для проверки отправки" class="form-input test-field" spellcheck="false" placeholder="Текст для проверки...">
-              <button id="btn-test-request" class="btn btn-action" type="button">Отправить</button>
+              <input type="text" id="testInput" aria-label="Text for the test request" class="form-input test-field" spellcheck="false" placeholder="Text to test...">
+              <button id="btn-test-request" class="btn btn-action" type="button">Send</button>
             </div>
 
             <div class="test-status-line" role="status" aria-live="polite">
-              <span id="resultBadge" class="badge" style="display: none;">Готов к тесту</span>
+              <span id="resultBadge" class="badge" style="display: none;">Ready to test</span>
               <span id="resultStatusText" class="status-detail"></span>
             </div>
 
             <details id="testResultBox" class="test-result-box" style="display: none;">
-              <summary>Подробности ответа</summary>
+              <summary>Response details</summary>
               <div class="response-content">
                 <div class="result-box-header">
-                  <span id="resultBoxTitle" class="result-box-title">Результат</span>
+                  <span id="resultBoxTitle" class="result-box-title">Result</span>
                   <div class="result-box-actions">
                     <span id="resultBoxMeta" class="result-box-meta"></span>
-                    <button type="button" id="btn-close-result" class="btn-close-result" title="Закрыть ответ" aria-label="Закрыть ответ">
+                    <button type="button" id="btn-close-result" class="btn-close-result" title="Dismiss response" aria-label="Dismiss response">
                       <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor">
                         <path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/>
                       </svg>
@@ -202,13 +201,13 @@
           <section class="settings-section window-section">
             <div class="section-header">
               <span class="header-indicator cyan"></span>
-              <h2 class="section-title">Положение и размер</h2>
+              <h2 class="section-title">Position and size</h2>
             </div>
             <div class="reset-bounds-box">
               <div class="reset-bounds-text">
-                <span class="field-hint reset-hint">Окно можно свободно перемещать за верхнюю полоску и растягивать за края в игре.</span>
+                <span class="field-hint reset-hint">Drag the top bar to move the window, or its edges to resize it in-game.</span>
               </div>
-              <button type="button" id="btn-reset-bounds" class="btn btn-ghost btn-sm">Сбросить окно</button>
+              <button type="button" id="btn-reset-bounds" class="btn btn-ghost btn-sm">Reset window</button>
             </div>
           </section>
 
@@ -218,13 +217,13 @@
           <section class="settings-section">
             <div class="section-header">
               <span class="header-indicator cyan"></span>
-              <h2 class="section-title">Внешний вид</h2>
+              <h2 class="section-title">Appearance</h2>
             </div>
 
             <div class="font-controls">
-              <label for="overlayFont">Шрифт</label>
+              <label for="overlayFont">Font</label>
               <select id="overlayFont" class="form-select">
-                <option value="default">По умолчанию</option>
+                <option value="default">Default</option>
                 <option value="Arial">Arial</option>
                 <option value="Segoe UI">Segoe UI</option>
                 <option value="Tahoma">Tahoma</option>
@@ -232,35 +231,36 @@
                 <option value="Consolas">Consolas</option>
                 <option value="Courier New">Courier New</option>
               </select>
-              <label for="overlayFontSize">Размер</label>
+              <label for="overlayFontSize">Size</label>
               <input id="overlayFontSize" class="form-input" type="number" min="10" max="48" step="1" value="18">
               <span class="font-unit">px</span>
             </div>
 
+
             <!-- 1. Непрозрачность фона -->
             <div class="form-group">
               <div class="range-header">
-                <label for="overlayOpacity">Непрозрачность фона</label>
+                <label for="overlayOpacity">Background opacity</label>
                 <span id="opacityValue" class="badge">90%</span>
               </div>
               <input type="range" id="overlayOpacity" class="form-range" min="20" max="100" step="5" value="90">
-              <span class="field-hint">100% — непрозрачный. Рекомендуется 90–95% для высокой читаемости текста поверх игры.</span>
+              <span class="field-hint">100% is opaque. Use 90–95% to keep text readable over the game.</span>
             </div>
 
             <!-- 2. Цвет фона -->
             <div class="form-group">
-              <label for="overlayBgColor">Цвет фона</label>
+              <span id="background-color-label" class="field-label">Background color</span>
               <div class="color-control-row">
                 <div class="color-picker-wrap">
-                  <input type="color" id="overlayBgColor" class="color-picker-input" value="#0e0e12" title="Выбрать свой цвет фона">
+                  <input type="color" id="overlayBgColor" class="color-picker-input" value="#0e0e12" aria-labelledby="background-color-label" title="Choose a custom background color">
                 </div>
                 <div class="chips-group theme-chips">
-                  <button type="button" class="chip-btn theme-chip" data-color="#ffffff" data-opacity="100">Белый</button>
-                  <button type="button" class="chip-btn theme-chip" data-color="#f4f6f9" data-opacity="100">Светлый</button>
-                  <button type="button" class="chip-btn theme-chip" data-color="#2a2a38" data-opacity="90">Графит</button>
-                  <button type="button" class="chip-btn theme-chip" data-color="#141424" data-opacity="75">Ночной</button>
-                  <button type="button" class="chip-btn theme-chip" data-color="#0e0e12" data-opacity="90">Тёмный</button>
-                  <button type="button" class="chip-btn theme-chip" data-color="#050508" data-opacity="95">Чёрный</button>
+                  <button type="button" class="chip-btn theme-chip" data-color="#ffffff" data-opacity="100">White</button>
+                  <button type="button" class="chip-btn theme-chip" data-color="#f4f6f9" data-opacity="100">Light</button>
+                  <button type="button" class="chip-btn theme-chip" data-color="#2a2a38" data-opacity="90">Graphite</button>
+                  <button type="button" class="chip-btn theme-chip" data-color="#141424" data-opacity="75">Night</button>
+                  <button type="button" class="chip-btn theme-chip" data-color="#0e0e12" data-opacity="90">Dark</button>
+                  <button type="button" class="chip-btn theme-chip" data-color="#050508" data-opacity="95">Black</button>
                 </div>
               </div>
             </div>
@@ -269,8 +269,8 @@
             <div class="toggles-list appearance-toggles">
               <label class="toggle-item">
                 <div class="toggle-text">
-                  <span class="toggle-label">Показывать подсказки клавиш</span>
-                  <span class="toggle-desc">Отображать подсказки Enter / Esc в нижней части оверлея</span>
+                  <span class="toggle-label">Show keyboard hints</span>
+                  <span class="toggle-desc">Show Enter / Esc hints at the bottom of the overlay</span>
                 </div>
                 <span class="switch">
                   <input type="checkbox" id="showHints" checked>
@@ -284,13 +284,13 @@
           <section class="settings-section behavior-section">
             <div class="section-header">
               <span class="header-indicator cyan"></span>
-              <h2 class="section-title">Поведение</h2>
+              <h2 class="section-title">Behavior</h2>
             </div>
             <div class="toggles-list">
               <label class="toggle-item">
                 <div class="toggle-text">
-                  <span class="toggle-label">Закрывать после успешной отправки</span>
-                  <span class="toggle-desc">Окно автоматически скроется после отправки и вернёт управление игре</span>
+                  <span class="toggle-label">Close after a successful send</span>
+                  <span class="toggle-desc">Hide the window after sending and return control to the game</span>
                 </div>
                 <span class="switch">
                   <input type="checkbox" id="closeOnSubmit" checked>
@@ -300,8 +300,8 @@
 
               <label class="toggle-item">
                 <div class="toggle-text">
-                  <span class="toggle-label">Очищать текст после успешной отправки</span>
-                  <span class="toggle-desc">Очищает поле. Если выключено, отправленный текст сохранится для повтора</span>
+                  <span class="toggle-label">Clear text after a successful send</span>
+                  <span class="toggle-desc">Clear the field. If disabled, keep the sent text for reuse</span>
                 </div>
                 <span class="switch">
                   <input type="checkbox" id="clearOnSubmit" checked>
@@ -311,8 +311,8 @@
 
               <label class="toggle-item">
                 <div class="toggle-text">
-                  <span class="toggle-label">Закрывать по Escape</span>
-                  <span class="toggle-desc">Скрывает окно по клавише Esc. Черновик набранного текста всегда сохраняется до следующего открытия</span>
+                  <span class="toggle-label">Close on Escape</span>
+                  <span class="toggle-desc">Hide on Esc. Keep the draft until the window is shown again</span>
                 </div>
                 <span class="switch">
                   <input type="checkbox" id="closeOnEscape" checked>
@@ -325,12 +325,11 @@
       </main>
       <!-- Нижняя панель действий -->
       <footer class="bottom-actions">
-        <div class="save-state"><span id="save-indicator" class="save-toast" role="status" aria-live="polite"></span><span id="dirty-indicator">Все изменения сохранены</span></div>
-        <button id="btn-save" class="btn btn-primary" type="button" disabled>Сохранить</button>
+        <div class="save-state"><span id="save-indicator" class="save-toast" role="status" aria-live="polite"></span><span id="dirty-indicator">All changes saved</span></div>
+        <button id="btn-save" class="btn btn-primary" type="button" disabled>Save</button>
       </footer>
 
     </div>
-
     <script src="config.js"></script>
     <script src="desktop.js"></script>
   </body>

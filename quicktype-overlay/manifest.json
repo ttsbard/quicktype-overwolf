@@ -25,7 +25,7 @@
     },
     "hotkeys": {
       "toggle_input_form": {
-        "title": "Показать/скрыть оверлей ввода QuickType",
+        "title": "Toggle QuickType input overlay",
         "action-type": "custom",
         "default": "Ctrl+Shift+F9",
         "passthrough": false

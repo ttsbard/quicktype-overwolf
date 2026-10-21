@@ -117,33 +117,32 @@ button, input, select, textarea, summary {
   -webkit-app-region: no-drag;
 }
 
-.window-control-btn {
-  border: 1px solid var(--border);
+.window-control-btn, .theme-toggle-btn {
+  border: 1px solid transparent;
   border-radius: 6px;
-  background: var(--surface);
+  background: transparent;
   color: var(--muted);
-  width: 30px;
+  width: 26px;
   height: 26px;
+  flex: 0 0 26px;
   padding: 0;
   line-height: 0;
   appearance: none;
   display: grid;
   place-items: center;
   cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .window-control-btn svg {
   display: block;
 }
 
-.window-control-btn:hover {
+.window-control-btn:hover, .theme-toggle-btn:hover,
+.window-control-btn:focus-visible, .theme-toggle-btn:focus-visible {
   background: var(--hover);
+  border-color: var(--border);
   color: var(--text);
-}
-
-.window-control-btn.close:hover {
-  background: #c42b3b;
-  color: white;
 }
 
 .main-container {
@@ -193,35 +192,18 @@ h1, h2, p {
   color: var(--text);
 }
 
-.tabs-theme-wrap {
+.titlebar-theme {
   display: flex;
   align-items: center;
-}
-
-.theme-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--muted);
-  padding: 0;
-  cursor: pointer;
-  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.theme-toggle-btn:hover {
-  background: var(--hover);
-  color: var(--text);
-  border-color: var(--accent);
+  margin-right: 14px;
 }
 
 .theme-icon {
   display: none;
   pointer-events: none;
+  width: 16px;
+  height: 16px;
+  margin: auto;
 }
 
 :root[data-theme="dark"] .theme-icon-sun {
@@ -298,7 +280,7 @@ h1, h2, p {
   margin-bottom: 0;
 }
 
-.form-group > label {
+.form-group > label, .form-group > .field-label {
   display: block;
   margin-bottom: 7px;
   font-size: 13.5px;
@@ -405,14 +387,14 @@ input[type="file"]::file-selector-button:hover {
 }
 
 .connection-actions .btn-icon {
-  width: 34px;
-  height: 34px;
-  min-height: 34px;
+  width: 26px;
+  height: 26px;
+  min-height: 26px;
   padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
+  border-radius: 6px;
 }
 
 .connection-import {

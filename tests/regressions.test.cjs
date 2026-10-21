@@ -23,6 +23,7 @@ function uiContext(file, cfg = {}, extra = {}) {
     if (!elements.has(id)) {
       const classes = new Set();
       elements.set(id, { value: '', checked: false, disabled: false, readOnly: false, style: { setProperty() {} },
+        options: [], appendChild(child) { this.options.push(child); },
         attributes: {}, setAttribute(n, v) { this.attributes[n] = String(v); }, getAttribute(n) { return this.attributes[n]; },
         classList: { add: (...a) => a.forEach(v => classes.add(v)), remove: (...a) => a.forEach(v => classes.delete(v)), contains: v => classes.has(v) },
         focus() {}, setSelectionRange() {}, events: {}, addEventListener(n, f) { this.events[n] = f; } });
@@ -33,6 +34,7 @@ function uiContext(file, cfg = {}, extra = {}) {
     setTimeout(f, delay) { const id = ++nextTimer; timers.set(id, { f, delay }); return id; },
     clearTimeout(id) { timers.delete(id); },
     document: { hidden: false, documentElement: element('root'), getElementById: element, querySelectorAll: () => [],
+      createElement() { return { value: '', textContent: '' }; },
       addEventListener(n, f) { documentEvents[n] = f; } },
     window: { innerWidth: 800, innerHeight: 250, focus() {}, addEventListener(n, f) { windowEvents[n] = f; } },
     overwolf: { windows: { onMessageReceived: { addListener(f) { ipc = f; } },
@@ -400,7 +402,7 @@ test('Overlay typography previews without saving, persists on Save and restores 
   assert.equal(d.c.getOverlayFontSize(999), 48);
   assert.equal(d.c.getOverlayFontSize(1), 10);
   assert.equal(d.c.getOverlayFontSize('invalid'), 18);
-  assert.equal(d.c.getOverlayFontFamily('unknown'), d.c.OVERLAY_FONTS.default);
+  assert.equal(d.c.getOverlayFontFamily(null), d.c.OVERLAY_FONTS.default);
 });
 
 test('Native color picker applies the selected color without saving until Save', () => {
@@ -791,6 +793,63 @@ test('Distribution file list includes every manifest icon and window resource', 
     ...Object.values(manifest.data.windows).map(w => w.file)]) {
     assert.ok(files.includes("'" + resource + "'"), resource + ' missing from distribution');
   }
+});
+
+test('System font loading deduplicates families, keeps selection and leaves settings unsaved until Save', async () => {
+  let queries = 0;
+  const d = uiContext('quicktype-overlay/desktop.js', {}, { window: { queryLocalFonts: async () => {
+    queries++;
+    return [{ family: 'Custom Serif' }, { family: 'Arial' }, { family: 'Custom Serif' }, { family: '  Custom Mono  ' }, { family: '' }];
+  } } });
+  const saved = d.c.localStorage.getItem(d.c.CONFIG_KEY);
+  await new Promise(r => setImmediate(r));
+  assert.equal(queries, 1);
+  assert.deepEqual(d.element('overlayFont').options.map(o => o.value), ['Custom Mono', 'Custom Serif']);
+  assert.equal(d.element('overlayFont').value, 'default');
+  assert.equal(d.element('btn-save').disabled, true);
+  assert.equal(d.c.localStorage.getItem(d.c.CONFIG_KEY), saved);
+  await d.element('overlayFont').events.pointerdown();
+  assert.equal(queries, 1);
+  assert.equal(d.element('overlayFont').options.length, 2);
+  d.element('overlayFont').value = 'Custom Serif'; d.element('overlayFont').events.change();
+  assert.equal(d.element('btn-save').disabled, false);
+  assert.equal(d.messages.at(-1)[2].overlayFont, 'Custom Serif');
+  assert.equal(d.c.loadOverlayConfig().overlayFont, 'default');
+  d.element('btn-save').events.click();
+  const reopened = uiContext('quicktype-overlay/desktop.js', d.c.loadOverlayConfig());
+  assert.equal(reopened.element('overlayFont').value, 'Custom Serif');
+  assert.equal(reopened.element('overlayFont').options[0].textContent, 'Custom Serif');
+  const u = uiContext('quicktype-overlay/overlay.js', d.c.loadOverlayConfig());
+  assert.equal(u.element('inputText').style.fontFamily, '"Custom Serif", sans-serif');
+});
+
+test('System font requests handle unavailable API, denial, empty results and retry without changing preferences', async () => {
+  const d = uiContext('quicktype-overlay/desktop.js', {});
+  assert.match(d.element('system-fonts-status').textContent, /cannot list system fonts/);
+  d.c.window.queryLocalFonts = async () => { const error = new Error('Denied'); error.name = 'NotAllowedError'; throw error; };
+  await d.element('overlayFont').events.pointerdown();
+  assert.match(d.element('system-fonts-status').textContent, /not granted/);
+  d.c.window.queryLocalFonts = async () => [];
+  await d.element('overlayFont').events.pointerdown();
+  assert.match(d.element('system-fonts-status').textContent, /No system fonts/);
+  assert.equal(d.element('btn-save').disabled, true);
+  d.c.window.queryLocalFonts = async () => [{ family: 'Кастомный' }];
+  d.element('overlayFont').events.keydown({ key: 'ArrowDown' });
+  await new Promise(r => setImmediate(r));
+  assert.equal(d.element('system-fonts-status').textContent, '');
+});
+
+test('Font enumeration blocks overlapping requests without resetting a selection made while waiting', async () => {
+  let resolve, calls = 0;
+  const d = uiContext('quicktype-overlay/desktop.js', {}, { window: {
+    queryLocalFonts: () => { calls++; return new Promise(r => resolve = r); }
+  } });
+  await d.element('overlayFont').events.pointerdown();
+  assert.equal(calls, 1);
+  d.element('overlayFont').value = 'Consolas';
+  resolve([{ family: 'Another font' }]); await new Promise(r => setImmediate(r));
+  assert.equal(d.element('overlayFont').value, 'Consolas');
+  assert.equal(d.element('system-fonts-status').textContent, '');
 });
 
 test('English interface ignores legacy language preference and preserves user and server text', async () => {

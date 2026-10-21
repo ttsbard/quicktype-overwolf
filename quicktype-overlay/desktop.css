@@ -198,6 +198,14 @@ h1, h2, p {
   margin-right: 14px;
 }
 
+.system-fonts-status:not(:empty) {
+  margin-bottom: 16px;
+}
+
+.system-fonts-status:empty {
+  display: none;
+}
+
 .theme-icon {
   display: none;
   pointer-events: none;

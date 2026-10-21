@@ -168,7 +168,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     overlayBgColorInput.value = cfg.overlayBgColor || '#0e0e12';
     showHintsCheckbox.checked = cfg.showHints !== false;
-    overlayFontSelect.value = Object.prototype.hasOwnProperty.call(OVERLAY_FONTS, cfg.overlayFont) ? cfg.overlayFont : 'default';
+    var family = normalizeFontFamily(cfg.overlayFont) || 'default';
+    ensureFontOption(family);
+    overlayFontSelect.value = family;
     overlayFontSizeInput.value = getOverlayFontSize(cfg.overlayFontSize);
 
     closeOnSubmitCheckbox.checked = cfg.closeOnSubmit !== false;
@@ -477,6 +479,52 @@ document.addEventListener('DOMContentLoaded', function () {
       overwolf.windows.sendMessage('background', 'preview_config', getOverlayAppearance(cfg), function () {});
     }
   }
+
+  function ensureFontOption(family) {
+    if (Object.prototype.hasOwnProperty.call(OVERLAY_FONTS, family)) return;
+    var exists = Array.from(overlayFontSelect.options).some(function (option) { return option.value === family; });
+    if (exists) return;
+    var option = document.createElement('option');
+    option.value = family;
+    option.textContent = family;
+    overlayFontSelect.appendChild(option);
+  }
+
+  var fontsStatus = document.getElementById('system-fonts-status');
+  var fontsLoading = false;
+  var fontsLoaded = false;
+  async function loadSystemFonts() {
+    if (fontsLoading || fontsLoaded) return;
+    if (typeof window.queryLocalFonts !== 'function') {
+      setText(fontsStatus, "This Overwolf version cannot list system fonts. The built-in list is still available.");
+      return;
+    }
+    fontsLoading = true;
+    setText(fontsStatus, "Loading system fonts...");
+    try {
+      var fonts = await window.queryLocalFonts();
+      var families = Array.from(new Set(fonts.map(function (font) { return normalizeFontFamily(font.family); }).filter(Boolean)));
+      families.sort(function (a, b) { return a.localeCompare(b); });
+      var selected = overlayFontSelect.value;
+      families.forEach(ensureFontOption);
+      overlayFontSelect.value = selected;
+      fontsLoaded = families.length > 0;
+      setText(fontsStatus, fontsLoaded ? '' :
+        "No system fonts returned. The built-in list is still available.");
+    } catch (error) {
+      setText(fontsStatus, error && (error.name === 'NotAllowedError' || error.name === 'SecurityError') ?
+        "System font access was not granted. Open the font list to try again." :
+        "Could not load system fonts. Open the font list to try again.");
+    } finally {
+      fontsLoading = false;
+    }
+  }
+  loadSystemFonts();
+  // Some browser engines require a user gesture for the first permission prompt.
+  overlayFontSelect.addEventListener('pointerdown', loadSystemFonts);
+  overlayFontSelect.addEventListener('keydown', function (event) {
+    if (event.key === ' ' || event.key === 'ArrowDown' || event.key === 'Enter') loadSystemFonts();
+  });
 
   // Интерактивное обновление ползунка прозрачности
   overlayFontSelect.addEventListener('change', emitLiveConfig);

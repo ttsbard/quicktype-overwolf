@@ -58,7 +58,15 @@ var OVERLAY_FONTS = {
 };
 
 function getOverlayFontFamily(font) {
-  return Object.prototype.hasOwnProperty.call(OVERLAY_FONTS, font) ? OVERLAY_FONTS[font] : OVERLAY_FONTS.default;
+  var family = normalizeFontFamily(font);
+  if (Object.prototype.hasOwnProperty.call(OVERLAY_FONTS, family)) return OVERLAY_FONTS[family];
+  return family ? JSON.stringify(family) + ', sans-serif' : OVERLAY_FONTS.default;
+}
+
+function normalizeFontFamily(value) {
+  if (typeof value !== 'string') return '';
+  var family = value.trim();
+  return family && family.length <= 160 && !/[\u0000-\u001f\u007f]/.test(family) ? family : '';
 }
 
 function getOverlayFontSize(value) {

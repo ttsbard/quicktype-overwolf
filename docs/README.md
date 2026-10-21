@@ -1,11 +1,18 @@
-# Документация QuickType (Overwolf Overlay)
+# QuickType documentation / Документация QuickType
 
+## User documentation / Пользовательская документация
 
-## Использование и установка
+**[English](./en/README.md) | [На русском](./ru/README.md)**
 
-- [Обмен подключениями через JSON](./usage/connection-json.md) — импорт, экспорт и готовый пример TTSBard.
+| Section / Раздел | English | Русский |
+|---|---|---|
+| Guides / Руководства | [User guides](./en/user/README.md) | [Пользовательские инструкции](./ru/user/README.md) |
+| Installation / Установка | [Overwolf Developer Mode](./en/user/developer-mode.md) | [Получение Developer Mode](./ru/user/developer-mode.md) |
+| Connections / Подключения | [Sharing connection settings](./en/user/connection-json.md) | [Обмен настройками подключения](./ru/user/connection-json.md) |
 
-- [Получение Developer Mode](./usage/developer-mode.md) — короткая инструкция по получению доступа для установки распакованных расширений.
+User guides are maintained separately in `en/user/` and `ru/user/`. Old pages in `usage/` retain navigation for existing links.
+
+Пользовательские инструкции находятся отдельно в `en/user/` и `ru/user/`. Старые страницы в `usage/` сохраняют переходы для прежних ссылок.
 
 ## Разработка и архитектура
 

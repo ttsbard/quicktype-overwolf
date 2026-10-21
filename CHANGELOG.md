@@ -8,20 +8,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- An English-only interface with the theme button in the title bar, separated from the window controls; the language switch and localization infrastructure have been removed.
+- Automatic system font enumeration when settings open where Local Font Access API is available, with permission handling, deduplicated families and persistence of the selected font. The built-in list remains available when enumeration is unsupported or denied.
 - Two desktop settings tabs: Connection and Overlay, with keyboard navigation.
-- Service preset selector: «Локальный TTSBard» vs «Другой сервис (REST / Webhook)», keeping advanced HTTP method and payload details in a collapsible section.
+- Portable connection JSON import/export, file selection and drag-and-drop, native file saving and clipboard copy.
+- Overlay font family and size settings with live preview.
+- Settings and close buttons in the overlay header, plus a dismiss button for errors.
+- A single README with English and Russian sections, language navigation and the keyboard layout focus workaround.
 - In-window overlay appearance preview, selected preset indicators, and persistent save footer with unsaved-change status.
 - Explanatory descriptions for behavior toggles clarifying draft preservation on Esc and submit.
 - Dynamic auto-height for overlay when typing multiline messages.
 - Independent System / Dark / Light desktop themes; the theme applies immediately and is saved separately from overlay settings.
 
 ### Changed
-- Overlay readability and focus: enlarged input text to 18px, improved contrast and opacity, simplified to a single clear focus frame, and streamlined placeholder to «Введите сообщение…».
+- Overlay readability and focus: enlarged default input text to 18px, improved contrast and opacity, simplified to a single clear focus frame, and removed the placeholder from the input field.
 - Overlay initial height reduced to a compact 100px with calm window contour.
-- Streamlined footer shortcuts: «Enter — Отправить · Esc — Закрыть» with secondary newline hint.
-- Renamed test section to «Проверка озвучивания» with button «Озвучить» and accurate status «Сервис принял текст».
-- Overlay tab reordered to present hotkey and window controls at the top.
+- Streamlined footer shortcuts: “Enter — Send · Esc — Close” with secondary newline hint.
+- Renamed the test section to “Speech test” with a “Send” button and accurate “Service accepted the text” status.
+- Compact connection form with an HTTP method selector and URL field without redundant visible labels, collapsible headers and body template, and no default service URL for new installations.
+- Launching the app or clicking its hub icon opens the input window on the desktop or in-game; settings are accessible from the overlay.
+- Redesigned application icons and desktop titlebar, with a theme toggle in the titlebar.
 - Delayed sending feedback banner shown only when network delay exceeds 800ms.
+- Separate REST request preparation from transport execution, share appearance filtering between windows, and simplify submission state and test response rendering.
+
+### Fixed
+- Open the native color picker only from its swatch, rather than from the full-width background color heading.
+- Reject empty and whitespace-only speech test input instead of sending an implicit fallback phrase.
+- Pass the content rectangle and callback in the correct positions to the Overwolf resize API.
+- Preserve automatic overlay height adjustment across programmatic resize events and avoid saving those events as manual geometry.
+- Cancel native folder export without writing a fallback file; report clipboard failure accurately and expose JSON for manual copying.
+- Discard pending import reads when a later selected file exceeds the size limit.
+- Include the manifest's ICO icon in the distribution file list.
+- Write valid ICO directory entries for the 256×256 image so all embedded icons load correctly.
+- Keep automatic height enabled when an untouched overlay is closed and reopened.
+- Prevent a pending import file read from replacing exported JSON in the import field.
+- Run regression tests in CI and before release packaging.
+
+### Known limitations
+- Switching keyboard layouts while the overlay is open may lose focus. Hide the overlay, switch layouts, then show it again. No solution is currently available.
+- In-game focus, resizing, Windows scaling, native dialogs and OBS capture still require manual verification for the release candidate.
 
 ## [0.3.0] - 2026-10-11
 

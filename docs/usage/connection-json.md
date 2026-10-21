@@ -1,36 +1,34 @@
-# Обмен настройками подключения
+# Documentation / Документация
 
-На вкладке «Подключение» можно экспортировать текущие параметры и передать JSON другому пользователю. Оформление, поведение и положение оверлея в файл не входят.
+This guide has moved. / Инструкция перенесена.
 
-## Экспорт
+- [English](../en/user/connection-json.md)
+- [Русский](../ru/user/connection-json.md)
 
-Нажмите «Экспорт JSON»: приложение подготовит файл `quicktype-connection.json` из текущих значений формы, в том числе несохранённых. Заголовки экспортируются полностью, включая ключи доступа.
+<a id="sharing-connection-settings--обмен-настройками-подключения"></a>
 
-## Импорт
+[English](../en/user/connection-json.md) · [Русский](../ru/user/connection-json.md)
 
-1. Нажмите «Импорт JSON».
-2. Выберите файл UTF-8 `.json` или вставьте текст в поле.
-3. Нажмите «Применить JSON». При ошибке параметры подключения останутся прежними.
-4. Проверьте адрес и при необходимости нажмите «Озвучить».
-5. Нажмите «Сохранить», чтобы использовать подключение в игре.
+<a id="english"></a>
 
-Можно начать с [готового примера TTSBard](./examples/ttsbard-connection.json).
+[English](../en/user/connection-json.md) · [Русский](../ru/user/connection-json.md)
 
-```json
-{
-  "apiUrl": "http://127.0.0.1:10101/v1/speech",
-  "httpMethod": "POST",
-  "headers": {
-    "Content-Type": "application/json"
-  },
-  "payloadTemplate": {
-    "text": "{text}"
-  }
-}
-```
+<a id="export"></a>
 
-Обязателен `apiUrl` с `http://` или `https://`. Если другие поля пропущены, используются POST, заголовок `Content-Type: application/json` и тело `{"text":"{text}"}`. Поддерживаются методы GET, POST и PUT. Неизвестные поля отклоняются, чтобы опечатка не меняла смысл подключения незаметно.
+[English](../en/user/connection-json.md) · [Русский](../ru/user/connection-json.md)
 
-`headers` — JSON-объект со строковыми значениями. `payloadTemplate` — объект, массив или строка для произвольного тела запроса. `{text}` заменяется текстом из оверлея. Для GET тело не отправляется; `{text}` можно указать в URL, иначе текст добавится в параметр `text`.
+<a id="import"></a>
 
-Максимальный размер файла или вставленного JSON — 1 МБ. Импорт полностью заменяет четыре параметра подключения в форме, не меняя остальные настройки.
+[English](../en/user/connection-json.md) · [Русский](../ru/user/connection-json.md)
+
+<a id="русский"></a>
+
+[English](../en/user/connection-json.md) · [Русский](../ru/user/connection-json.md)
+
+<a id="экспорт"></a>
+
+[English](../en/user/connection-json.md) · [Русский](../ru/user/connection-json.md)
+
+<a id="импорт"></a>
+
+[English](../en/user/connection-json.md) · [Русский](../ru/user/connection-json.md)

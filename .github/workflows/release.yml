@@ -16,6 +16,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Regression Tests
+        run: node --test tests/regressions.test.cjs
+
       - name: Validate Tag Matches Manifest Version
         id: check-version
         run: |
@@ -45,12 +53,11 @@ jobs:
           $body = @(
               "### 📦 Установка (требуется Developer Mode)",
               "",
-              "Клиент Overwolf блокирует неподписанные файлы .opk. Установка производится как распакованное расширение через режим разработчика (**Developer Mode**):",
+              "Установка производится как распакованное расширение. На аккаунте Overwolf должен быть заранее включён **Developer Mode** после одобрения заявки Overwolf:",
               "",
               "1. Скачайте прикреплённый архив **QuickType-$ver.zip** и распакуйте его.",
-              "2. В клиенте Overwolf откройте **Настройки** -> **О программе** (About).",
-              "3. Кликните **10 раз подряд** по номеру версии Overwolf — появится меню **Development Options** (Пакетирование).",
-              "4. Нажмите **Load unpacked extension** и укажите распакованную папку ``quicktype-overlay``.",
+              "2. В клиенте Overwolf откройте **Настройки** -> **Development Options**.",
+              "3. Нажмите **Load unpacked extension** и укажите распакованную папку ``quicktype-overlay``.",
               "",
               "---",
               "",

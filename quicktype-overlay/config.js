@@ -5,6 +5,15 @@ var CONFIG_KEY = 'quicktype_overlay_config';
 var BOUNDS_KEY = CONFIG_KEY + '_bounds';
 var BOUNDS_FIELDS = ['overlayBounds', 'overlayWidth', 'overlayHeight'];
 var REQUEST_TIMEOUT_MS = 15000;
+var OVERLAY_APPEARANCE_FIELDS = ['overlayOpacity', 'overlayBgColor', 'showHints', 'overlayFont', 'overlayFontSize'];
+
+function getOverlayAppearance(config) {
+  var appearance = {};
+  OVERLAY_APPEARANCE_FIELDS.forEach(function (key) {
+    if (Object.prototype.hasOwnProperty.call(config, key)) appearance[key] = config[key];
+  });
+  return appearance;
+}
 
 var DEFAULT_CONFIG = {
   apiUrl: '',
@@ -190,7 +199,8 @@ function withRequestDeadline(operation, onTimeout) {
   });
 }
 
-async function executeRestRequest(config, inputText) {
+// Build and validate once, before choosing a transport or starting its deadline.
+function prepareRestRequest(config, inputText) {
   var url = (config.apiUrl || '').trim();
   if (!url) throw new Error('URL эндпоинта не задан');
   var method = (config.httpMethod || 'POST').toUpperCase();
@@ -229,6 +239,14 @@ async function executeRestRequest(config, inputText) {
     }
   }
 
+  return { url: url, method: method, headers: parsedHeaders, body: bodyString };
+}
+
+async function executeRestRequest(config, inputText) {
+  var request = prepareRestRequest(config, inputText);
+  var url = request.url;
+  var method = request.method;
+  var parsedHeaders = request.headers;
   var nativeRequest = typeof overwolf !== 'undefined' && overwolf.web &&
     typeof overwolf.web.sendHttpRequest === 'function' && isLoopbackAddress(url);
   var source = nativeRequest ? 'Overwolf Native API' : 'Fetch API';
@@ -241,7 +259,7 @@ async function executeRestRequest(config, inputText) {
         var headers = Object.keys(parsedHeaders).map(function (key) { return { key: key, value: parsedHeaders[key] }; });
         var result = await new Promise(function (resolve, reject) {
           try {
-            overwolf.web.sendHttpRequest(url, method, headers, method === 'GET' ? '' : bodyString, resolve);
+            overwolf.web.sendHttpRequest(url, method, headers, request.body, resolve);
           } catch (nativeError) { reject(nativeError); }
         });
         status = result && typeof result.statusCode === 'number' ? result.statusCode : 0;
@@ -252,7 +270,7 @@ async function executeRestRequest(config, inputText) {
       } else {
         var options = { method: method, headers: parsedHeaders };
         if (controller) options.signal = controller.signal;
-        if (method !== 'GET') options.body = bodyString;
+        if (method !== 'GET') options.body = request.body;
         var response = await fetch(url, options);
         body = await response.text();
         status = response.status;

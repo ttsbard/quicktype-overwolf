@@ -121,8 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // Загружаем текущий конфиг
-  var currentConfig = loadOverlayConfig();
-  populateForm(currentConfig);
+  populateForm(loadOverlayConfig());
   savedForm = JSON.stringify(readForm());
   updateSaveState();
   updateThemeChips();
@@ -137,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var form = readForm();
     var saved = JSON.parse(savedForm);
     var dirty = JSON.stringify(form) !== savedForm;
-    var previewChanged = ['overlayOpacity', 'overlayBgColor', 'showHints', 'overlayFont', 'overlayFontSize'].some(function (key) {
+    var previewChanged = OVERLAY_APPEARANCE_FIELDS.some(function (key) {
       return form[key] !== saved[key];
     });
     dirtyIndicator.textContent = previewChanged ? 'Применено · нажмите «Сохранить»' :
@@ -229,13 +228,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function handleImportFile(file) {
     if (!file) return;
+    var version = ++fileReadVersion;
     if (file.size > maxProfileSize) {
       transferMessage('Файл слишком большой. Максимум — 1 МБ.', false);
       if (importFile) importFile.value = '';
       resetImportFileName();
       return;
     }
-    var version = ++fileReadVersion;
     var reader = new FileReader();
     reader.onload = function () {
       if (version !== fileReadVersion) return;
@@ -325,7 +324,7 @@ document.addEventListener('DOMContentLoaded', function () {
       importText.focus();
     }
   });
-  function copyToClipboard(text) {
+  async function copyToClipboard(text) {
     if (typeof overwolf !== 'undefined' && overwolf.utils && typeof overwolf.utils.placeOnClipboard === 'function') {
       try {
         overwolf.utils.placeOnClipboard(text);
@@ -334,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
       try {
-        navigator.clipboard.writeText(text).catch(function () {});
+        await navigator.clipboard.writeText(text);
         return true;
       } catch (_) {}
     }
@@ -345,9 +344,9 @@ document.addEventListener('DOMContentLoaded', function () {
       ta.style.opacity = '0';
       document.body.appendChild(ta);
       ta.select();
-      document.execCommand('copy');
+      var copied = document.execCommand('copy');
       ta.remove();
-      return true;
+      return copied;
     } catch (_) {
       return false;
     }
@@ -357,16 +356,20 @@ document.addEventListener('DOMContentLoaded', function () {
     var encoding = (overwolf.io && overwolf.io.enums && overwolf.io.enums.eEncoding && overwolf.io.enums.eEncoding.UTF8) || 'UTF8';
     overwolf.io.writeFileContents(targetFile, json, encoding, false, function (writeRes) {
       if (writeRes && writeRes.success) {
-        callback(null, 'Файл сохранён: ' + targetFile + ' (и скопирован в буфер обмена)');
+        callback(null, 'Файл сохранён: ' + targetFile);
       } else {
         var err = writeRes && writeRes.error ? writeRes.error : 'ошибка записи';
-        callback(new Error(err), 'Не удалось записать файл (' + err + '). JSON скопирован в буфер обмена.');
+        callback(new Error(err), 'Не удалось записать файл (' + err + ').');
       }
     });
   }
 
   function writeToDefaultOverwolfPath(json, callback) {
     var folder = (overwolf.io && overwolf.io.paths && (overwolf.io.paths.desktop || overwolf.io.paths.documents)) || '';
+    if (!folder) {
+      callback(new Error('No export directory'), 'Папка для экспорта недоступна.');
+      return;
+    }
     var targetFile = (folder ? folder.replace(/[\\\/]+$/, '') + '\\' : '') + 'quicktype-connection.json';
     writeOverwolfFile(targetFile, json, callback);
   }
@@ -382,8 +385,7 @@ document.addEventListener('DOMContentLoaded', function () {
             var targetFile = res.path.replace(/[\\\/]+$/, '') + '\\quicktype-connection.json';
             writeOverwolfFile(targetFile, json, callback);
           } else {
-            // Пользователь закрыл окно выбора — сохраняем на Рабочий стол по умолчанию
-            writeToDefaultOverwolfPath(json, callback);
+            callback(null, 'Экспорт отменён.');
           }
         });
         return;
@@ -406,12 +408,12 @@ document.addEventListener('DOMContentLoaded', function () {
           link.remove();
           URL.revokeObjectURL(url);
         }, 1000);
-        callback(null, 'Файл скачан и скопирован в буфер обмена.');
+        callback(null, 'Скачивание файла запрошено.');
         return;
       }
     } catch (_) {}
 
-    callback(null, 'JSON скопирован в буфер обмена.');
+    callback(new Error('File saving unavailable'), 'Сохранение файла недоступно.');
   }
 
   function saveJsonToFile(json, callback) {
@@ -430,10 +432,10 @@ document.addEventListener('DOMContentLoaded', function () {
           });
         });
       }).then(function () {
-        callback(null, 'Файл сохранён и скопирован в буфер обмена.');
+        callback(null, 'Файл сохранён.');
       }).catch(function (err) {
         if (err && err.name === 'AbortError') {
-          callback(null, 'Экспорт отменён (JSON скопирован в буфер обмена).');
+          callback(null, 'Экспорт отменён.');
         } else {
           saveOverwolfOrDownload(json, callback);
         }
@@ -445,16 +447,23 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
 
-  document.getElementById('btn-export-connection').addEventListener('click', function () {
+  document.getElementById('btn-export-connection').addEventListener('click', async function () {
     try {
       var json = exportConnectionProfile(readForm());
-      copyToClipboard(json);
+      var clipboardResult = copyToClipboard(json);
       if (importText) {
         importText.value = json;
       }
-      saveJsonToFile(json, function (err, message) {
-        transferMessage(message, !err);
+      var result = await new Promise(function (resolve) {
+        saveJsonToFile(json, function (err, message) { resolve({ error: err, message: message }); });
       });
+      var copied = await clipboardResult;
+      if (!copied) {
+        importPanel.hidden = false;
+        importButton.setAttribute('aria-expanded', 'true');
+      }
+      transferMessage(result.message + (copied ? ' JSON скопирован в буфер обмена.' :
+        ' Не удалось скопировать JSON; он доступен в поле импорта.'), !result.error);
     } catch (error) {
       transferMessage('Не удалось экспортировать: ' + error.message, false);
     }
@@ -462,14 +471,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function emitLiveConfig() {
     var cfg = readForm();
-    currentConfig = Object.assign({}, currentConfig, cfg);
     updateThemeChips();
     updateSaveState();
     if (typeof overwolf !== 'undefined') {
-      overwolf.windows.sendMessage('background', 'preview_config', {
-        overlayOpacity: cfg.overlayOpacity, overlayBgColor: cfg.overlayBgColor, showHints: cfg.showHints,
-        overlayFont: cfg.overlayFont, overlayFontSize: cfg.overlayFontSize
-      }, function () {});
+      overwolf.windows.sendMessage('background', 'preview_config', getOverlayAppearance(cfg), function () {});
     }
   }
 
@@ -513,9 +518,6 @@ document.addEventListener('DOMContentLoaded', function () {
   // Кнопка сброса положения и размера окна
   if (btnResetBounds) {
     btnResetBounds.addEventListener('click', function () {
-      currentConfig.overlayBounds = null;
-      currentConfig.overlayWidth = 640;
-      currentConfig.overlayHeight = 100;
       updateOverlayConfig({ overlayBounds: null, overlayWidth: 640, overlayHeight: 100 });
 
       if (typeof overwolf !== 'undefined') {
@@ -541,14 +543,13 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    currentConfig = Object.assign({}, loadOverlayConfig(), cfg);
     var success = updateOverlayConfig(cfg);
     if (success) {
       savedForm = JSON.stringify(cfg);
       updateSaveState();
       showStatus('Сохранено!', true);
       if (typeof overwolf !== 'undefined') {
-        overwolf.windows.sendMessage('background', 'config_updated', currentConfig, function () {});
+        overwolf.windows.sendMessage('background', 'config_updated', loadOverlayConfig(), function () {});
       }
     } else {
       showStatus('Ошибка сохранения', false);
@@ -574,11 +575,29 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function showTestDetails(type, title, meta, body) {
+    if (!testResultBox) return;
+    testResultBox.style.display = 'block';
+    testResultBox.open = type === 'error';
+    testResultBox.className = 'test-result-box ' + type;
+    resultBoxTitle.textContent = title;
+    resultBoxMeta.textContent = meta;
+    resultBoxBody.textContent = body;
+  }
+
   // Проверка озвучивания / REST-запроса
   async function performTest() {
     if (btnTestRequest.disabled) return;
+    var text = testInput.value.trim();
+    if (!text) {
+      if (resultBadge) resultBadge.style.display = 'none';
+      if (testResultBox) testResultBox.style.display = 'none';
+      resultStatusText.textContent = 'Введите текст для проверки.';
+      resultStatusText.className = 'status-detail error';
+      testInput.focus();
+      return;
+    }
     var cfg = readForm();
-    var text = testInput.value.trim() || 'Проверка';
 
     btnTestRequest.disabled = true;
     if (resultBadge) {
@@ -588,12 +607,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     resultStatusText.textContent = 'Отправка на ' + (cfg.apiUrl || '...') + '...';
     resultStatusText.className = 'status-detail info';
-    if (testResultBox) testResultBox.style.display = 'none';
-    testResultBox.open = false;
+    if (testResultBox) {
+      testResultBox.style.display = 'none';
+      testResultBox.open = false;
+    }
 
     try {
       var res = await executeRestRequest(cfg, text);
-      btnTestRequest.disabled = false;
 
       if (res.ok) {
         if (resultBadge) {
@@ -603,14 +623,8 @@ document.addEventListener('DOMContentLoaded', function () {
         resultStatusText.textContent = 'Сервис принял текст · ' + res.durationMs + ' мс';
         resultStatusText.className = 'status-detail success';
 
-        if (testResultBox) {
-          testResultBox.style.display = 'block';
-          testResultBox.open = false;
-          testResultBox.className = 'test-result-box success';
-          resultBoxTitle.textContent = 'Сервис принял текст (HTTP ' + res.status + '):';
-          resultBoxMeta.textContent = res.durationMs + ' мс';
-          resultBoxBody.textContent = res.body ? formatResponseBody(res.body) : '(Запрос успешно принят сервером, тело ответа пустое)';
-        }
+        showTestDetails('success', 'Сервис принял текст (HTTP ' + res.status + '):',
+          res.durationMs + ' мс', res.body ? formatResponseBody(res.body) : '(Запрос успешно принят сервером, тело ответа пустое)');
       } else {
         if (resultBadge) {
           resultBadge.textContent = res.status ? ('HTTP ' + res.status) : 'Сбой';
@@ -639,26 +653,12 @@ document.addEventListener('DOMContentLoaded', function () {
         resultStatusText.textContent = errorStatusMessage;
         resultStatusText.className = 'status-detail error';
 
-        if (testResultBox) {
-          testResultBox.style.display = 'block';
-          testResultBox.open = true;
-          testResultBox.className = 'test-result-box error';
-          resultBoxTitle.textContent = res.status ? 'Тело ответа сервера:' : 'Причина сбоя:';
-          resultBoxMeta.textContent = res.durationMs ? (res.durationMs + ' мс') : '';
-
-          var detailsText = '';
-          if (res.body) {
-            detailsText = formatResponseBody(res.body);
-          } else if (res.status) {
-            detailsText = '(Тело ответа пустое)';
-          } else if (res.error) {
-            detailsText = res.error;
-          }
-          resultBoxBody.textContent = detailsText || 'Сервер не вернул деталей ошибки.';
-        }
+        var detailsText = res.body ? formatResponseBody(res.body) :
+          res.status ? '(Тело ответа пустое)' : res.error || 'Сервер не вернул деталей ошибки.';
+        showTestDetails('error', res.status ? 'Тело ответа сервера:' : 'Причина сбоя:',
+          res.durationMs ? (res.durationMs + ' мс') : '', detailsText);
       }
     } catch (err) {
-      btnTestRequest.disabled = false;
       if (resultBadge) {
         resultBadge.textContent = 'Ошибка';
         resultBadge.className = 'badge error';
@@ -666,16 +666,11 @@ document.addEventListener('DOMContentLoaded', function () {
       resultStatusText.textContent = 'Исключение: ' + err.message;
       resultStatusText.className = 'status-detail error';
 
-      if (testResultBox) {
-        testResultBox.style.display = 'block';
-        testResultBox.open = true;
-        testResultBox.className = 'test-result-box error';
-        resultBoxTitle.textContent = 'Ошибка выполнения:';
-        resultBoxMeta.textContent = '';
-        resultBoxBody.textContent = err.message;
-      }
+      showTestDetails('error', 'Ошибка выполнения:', '', err.message);
       // Configuration errors belong to the request editor, even when it was collapsed.
       requestDetails.open = true;
+    } finally {
+      btnTestRequest.disabled = false;
     }
   }
 

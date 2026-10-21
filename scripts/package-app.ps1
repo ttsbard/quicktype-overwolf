@@ -22,7 +22,8 @@ $files = @(
     'overlay.html',
     'overlay.css',
     'overlay.js',
-    'icon.png'
+    'icon.png',
+    'icon.ico'
 )
 
 foreach ($f in $files) {

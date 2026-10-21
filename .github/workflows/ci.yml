@@ -51,6 +51,9 @@ jobs:
           }
           Write-Host "Manifest schema and referenced files verified for version $($manifest.meta.version)."
 
+      - name: Run Regression Tests
+        run: node --test tests/regressions.test.cjs
+
       - name: Validate PowerShell Scripts
         run: |
           $scripts = Get-ChildItem -Path scripts -Filter "*.ps1"

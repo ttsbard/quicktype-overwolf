@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', function () {
   var inputField = document.getElementById('inputText');
   var hudContainer = document.getElementById('hudContainer');
   var hudDrag = document.getElementById('hudDrag');
-  var hudResizeGrip = document.getElementById('hudResizeGrip');
   var hudStatusBanner = document.getElementById('hudStatusBanner');
   var hudStatusText = document.getElementById('hudStatusText');
   var closeErrorButton = document.getElementById('btn-close-error');
@@ -23,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   var config = loadOverlayConfig();
-  var isSubmitting = false;
   var activeRequest = null;
   var requestSequence = 0;
   var requestPrefix = Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -32,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   var statusTimeout = null;
   var sendingDelayTimer = null;
   var saveBoundsTimer = null;
+  var automaticSize = null;
 
   function hexToRgba(hex, opacityPercent) {
     if (!hex) hex = '#0e0e12';
@@ -93,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function () {
       hudStatusBanner.className = 'hud-status-banner';
       // Короткий статус только при задержке отправки
       sendingDelayTimer = setTimeout(function () {
-        if (isSubmitting && overlayVisible) {
+        if (activeRequest && overlayVisible) {
           hudStatusBanner.className = 'hud-status-banner info';
           hudStatusText.textContent = 'Отправка...';
           hudStatusBanner.style.display = 'flex';
@@ -116,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function focusField() {
-    if (!inputField || isSubmitting || !overlayVisible) return;
+    if (!inputField || activeRequest || !overlayVisible) return;
     try {
       window.focus();
     } catch (_) {}
@@ -135,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function activateOverlay() {
     overlayVisible = true;
     // Repeated focus messages must not reset pending requests or drafts.
-    inputField.readOnly = isSubmitting;
+    inputField.readOnly = !!activeRequest;
     focusField();
     autoAdjustHeight();
     [15, 45, 100, 200].forEach(function (delay) {
@@ -143,24 +142,26 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  function clearActiveRequest() {
+    if (activeRequest) clearTimeout(activeRequest.timer);
+    activeRequest = null;
+    inputField.readOnly = false;
+  }
+
   function dismissOverlay() {
     overlayVisible = false;
-    if (activeRequest) clearTimeout(activeRequest.timer);
-    if (sendingDelayTimer) {
-      clearTimeout(sendingDelayTimer);
-      sendingDelayTimer = null;
-    }
-    activeRequest = null;
-    isSubmitting = false;
-    inputField.readOnly = false;
+    clearActiveRequest();
     setStatus('normal');
   }
 
-  function saveCurrentBounds() {
+  function saveCurrentBounds(ignoreAutomaticResize) {
     if (typeof overwolf === 'undefined' || !overwolf.windows) return;
     overwolf.windows.getCurrentWindow(function (res) {
       if (res && res.success && res.window) {
         var w = res.window;
+        if (ignoreAutomaticResize && automaticSize &&
+            w.width === automaticSize.width && w.height === automaticSize.height &&
+            w.left === automaticSize.left && w.top === automaticSize.top) return;
         config.overlayBounds = {
           left: w.left,
           top: w.top,
@@ -177,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function debouncedSaveBounds() {
     if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
-    saveBoundsTimer = setTimeout(saveCurrentBounds, 500);
+    saveBoundsTimer = setTimeout(function () { saveCurrentBounds(true); }, 500);
   }
 
   // Захват фокуса и обработка IPC сообщений от background
@@ -189,10 +190,7 @@ document.addEventListener('DOMContentLoaded', function () {
         previewConfig = {};
         applyConfig(message.content);
       } else if (message.id === 'preview_config') {
-        var preview = message.content || {};
-        ['overlayOpacity', 'overlayBgColor', 'showHints', 'overlayFont', 'overlayFontSize'].forEach(function (key) {
-          if (Object.prototype.hasOwnProperty.call(preview, key)) previewConfig[key] = preview[key];
-        });
+        Object.assign(previewConfig, getOverlayAppearance(message.content || {}));
         applyConfig(loadOverlayConfig());
       } else if (message.id === 'overlay_hidden') {
         dismissOverlay();
@@ -236,14 +234,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
   var currentWindowId = null;
 
-  function cacheCurrentWindowId() {
-    if (typeof overwolf !== 'undefined' && overwolf.windows) {
-      overwolf.windows.getCurrentWindow(function (res) {
-        if (res && res.success && res.window) {
-          currentWindowId = res.window.id;
-        }
-      });
+  function withCurrentWindowId(callback) {
+    if (typeof overwolf === 'undefined' || !overwolf.windows) return;
+    if (currentWindowId) {
+      callback(currentWindowId);
+      return;
     }
+    overwolf.windows.getCurrentWindow(function (res) {
+      if (res && res.success && res.window) {
+        currentWindowId = res.window.id;
+        callback(currentWindowId);
+      }
+    });
   }
 
   function getDragEdge(edgeName) {
@@ -263,7 +265,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (typeof overwolf === 'undefined' || !overwolf.windows) return;
     var edge = getDragEdge(edgeName);
-    var doResize = function (winId) {
+    withCurrentWindowId(function (winId) {
+      automaticSize = null;
       // The third argument is the content rectangle, not a callback.
       var rect = { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
       overwolf.windows.dragResize(winId, edge, rect, function (result) {
@@ -273,17 +276,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         saveCurrentBounds();
       });
-    };
-    if (currentWindowId) {
-      doResize(currentWindowId);
-    } else {
-      overwolf.windows.getCurrentWindow(function (res) {
-        if (res && res.success && res.window) {
-          currentWindowId = res.window.id;
-          doResize(currentWindowId);
-        }
-      });
-    }
+    });
   }
 
   function startDragMove(e) {
@@ -292,19 +285,9 @@ document.addEventListener('DOMContentLoaded', function () {
       e.preventDefault();
     }
     if (typeof overwolf === 'undefined' || !overwolf.windows) return;
-    var doMove = function (winId) {
+    withCurrentWindowId(function (winId) {
       overwolf.windows.dragMove(winId, debouncedSaveBounds);
-    };
-    if (currentWindowId) {
-      doMove(currentWindowId);
-    } else {
-      overwolf.windows.getCurrentWindow(function (res) {
-        if (res && res.success && res.window) {
-          currentWindowId = res.window.id;
-          doMove(currentWindowId);
-        }
-      });
-    }
+    });
   }
 
   function autoAdjustHeight() {
@@ -323,6 +306,7 @@ document.addEventListener('DOMContentLoaded', function () {
         targetHeight = Math.min(240, 100 + (lines - 1) * 26);
       }
       if (Math.abs(win.height - targetHeight) > 6) {
+        automaticSize = { width: win.width, height: targetHeight, left: win.left, top: win.top };
         overwolf.windows.changeSize(win.id, win.width, targetHeight, function () {});
       }
     });
@@ -334,6 +318,8 @@ document.addEventListener('DOMContentLoaded', function () {
       if (res.success) {
         var defaultW = 640;
         var defaultH = 100;
+        if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
+        automaticSize = { width: defaultW, height: defaultH, left: 100, top: 100 };
         overwolf.windows.changeSize(res.window.id, defaultW, defaultH, function () {
           overwolf.windows.changePosition(res.window.id, 100, 100, function () {
             config.overlayBounds = null;
@@ -358,16 +344,12 @@ document.addEventListener('DOMContentLoaded', function () {
       statusTimeout = setTimeout(function () {
         if (activeRequest !== completed) return;
         setStatus('normal');
-        activeRequest = null;
-        isSubmitting = false;
-        inputField.readOnly = false;
+        clearActiveRequest();
         if (completed.close && overlayVisible) hideOverlay();
         else if (overlayVisible) focusField();
       }, 350);
     } else {
-      activeRequest = null;
-      isSubmitting = false;
-      inputField.readOnly = false;
+      clearActiveRequest();
       setStatus('error', content.error || 'Не удалось отправить. Enter — повторить');
       if (overlayVisible) focusField();
     }
@@ -391,10 +373,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Дублирование фокуса при системных событиях
   window.addEventListener('focus', function () {
-    if (overlayVisible && !isSubmitting) focusField();
+    if (overlayVisible) focusField();
   });
   document.addEventListener('visibilitychange', function () {
-    if (overlayVisible && !document.hidden && !isSubmitting) {
+    if (overlayVisible && !document.hidden) {
       focusField();
     }
   });
@@ -409,7 +391,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Первичная инициализация конфигурации и стилей
   applyConfig(config);
-  cacheCurrentWindowId();
   restoreSavedBounds();
   activateOverlay();
 
@@ -437,7 +418,7 @@ document.addEventListener('DOMContentLoaded', function () {
       event.preventDefault();
       event.stopPropagation();
 
-      if (isSubmitting) return;
+      if (activeRequest) return;
 
       var text = inputField.value.trim();
       if (!text) {
@@ -449,7 +430,6 @@ document.addEventListener('DOMContentLoaded', function () {
       var requestId = requestPrefix + '-' + (++requestSequence);
       activeRequest = { id: requestId, text: inputField.value,
         clear: config.clearOnSubmit !== false, close: config.closeOnSubmit !== false };
-      isSubmitting = true;
       inputField.readOnly = true;
       setStatus('sending', 'Отправка...');
       // Also recover if the controller reloads or an IPC reply is lost.

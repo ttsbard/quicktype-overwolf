@@ -171,6 +171,7 @@ test('Desktop Save retains independently updated bounds; resize retains API sett
 test('Desktop preview sends only appearance; repeated Enter tests are blocked', async () => {
   let resolve, count = 0;
   const d = uiContext('quicktype-overlay/desktop.js');
+  d.element('testInput').value = 'Проверка';
   d.c.executeRestRequest = () => { count++; return new Promise(r => resolve = r); };
   d.element('overlayOpacity').value = '20'; d.element('overlayOpacity').events.input();
   const message = d.messages.at(-1); assert.equal(message[1], 'preview_config'); assert.equal(message[2].overlayOpacity, 20); assert.equal(message[2].apiUrl, undefined);
@@ -423,6 +424,7 @@ test('White overlay uses light appearance and returns to dark appearance on colo
 test('Desktop test response close button hides testResultBox and resets status badge', async () => {
   let resolve;
   const d = uiContext('quicktype-overlay/desktop.js');
+  d.element('testInput').value = 'Проверка';
   d.c.executeRestRequest = () => new Promise(r => resolve = r);
   d.element('btn-test-request').events.click();
   resolve({ ok: true, status: 200, durationMs: 12, body: '{"ok":true}' });
@@ -526,6 +528,7 @@ test('Desktop invalid headers reveal their editor from the overlay tab and prese
 
 test('Desktop response details collapse on success and open on HTTP failure', async () => {
   const d = uiContext('quicktype-overlay/desktop.js');
+  d.element('testInput').value = 'Проверка';
   d.c.executeRestRequest = async () => ({ ok: true, status: 204, durationMs: 12, body: '' });
   await d.element('btn-test-request').events.click();
   assert.equal(d.element('testResultBox').open, false);
@@ -607,7 +610,7 @@ test('Desktop import file reads file content and updates filename display', () =
   assert.ok(!d.element('connectionFileName').classList.contains('has-file'));
 });
 
-test('Desktop connection export copies to clipboard, populates textarea and saves file', () => {
+test('Desktop connection export copies to clipboard, populates textarea and saves file', async () => {
   let placed = '';
   let writtenPath = '', writtenContent = '';
   const d = uiContext('quicktype-overlay/desktop.js', { apiUrl: 'https://api.test/speech' }, {
@@ -631,7 +634,7 @@ test('Desktop connection export copies to clipboard, populates textarea and save
     }
   });
 
-  d.element('btn-export-connection').events.click();
+  await d.element('btn-export-connection').events.click();
   assert.equal(writtenPath, 'C:\\Users\\User\\Downloads\\quicktype-connection.json');
   assert.ok(writtenContent.includes('https://api.test/speech'));
   assert.equal(placed, writtenContent);
@@ -641,11 +644,54 @@ test('Desktop connection export copies to clipboard, populates textarea and save
 
 test('Desktop speech check reports service accepted text upon success', async () => {
   const d = uiContext('quicktype-overlay/desktop.js');
+  d.element('testInput').value = 'Проверка';
   d.c.executeRestRequest = async () => ({ ok: true, status: 200, durationMs: 42, body: '{"ok":true}' });
   await d.element('btn-test-request').events.click();
   assert.match(d.element('resultStatusText').textContent, /Сервис принял текст/);
   assert.match(d.element('resultBoxTitle').textContent, /Сервис принял текст/);
   assert.equal(d.element('resultBadge').textContent, 'HTTP 200');
+});
+
+test('Desktop speech test rejects empty and whitespace input for click and Enter, then permits valid text', async () => {
+  const d = uiContext('quicktype-overlay/desktop.js');
+  const sent = [];
+  d.c.executeRestRequest = async (cfg, text) => {
+    sent.push(text);
+    return { ok: true, status: 204, durationMs: 1, body: '' };
+  };
+  for (const text of ['', '   ', '\t\n  ']) {
+    d.element('testInput').value = text;
+    await d.element('btn-test-request').events.click();
+    d.key('Enter');
+    assert.equal(sent.length, 0);
+    assert.equal(d.element('btn-test-request').disabled, false);
+    assert.match(d.element('resultStatusText').textContent, /Введите текст/);
+  }
+  d.element('testInput').value = '  Привет  ';
+  await d.element('btn-test-request').events.click();
+  assert.deepEqual(sent, ['Привет']);
+  assert.match(d.element('resultStatusText').textContent, /Сервис принял текст/);
+  d.element('testInput').value = '';
+  await d.element('btn-test-request').events.click();
+  assert.equal(d.element('resultBadge').style.display, 'none');
+  assert.equal(d.element('testResultBox').style.display, 'none');
+  assert.equal(sent.length, 1);
+});
+
+test('Desktop configuration exception unlocks speech test and permits a successful retry', async () => {
+  const d = uiContext('quicktype-overlay/desktop.js');
+  d.element('testInput').value = 'Проверка';
+  d.c.executeRestRequest = async () => { throw new Error('Invalid request configuration'); };
+  await d.element('btn-test-request').events.click();
+  assert.equal(d.element('btn-test-request').disabled, false);
+  assert.equal(d.element('requestDetails').open, true);
+  assert.equal(d.element('testResultBox').open, true);
+  assert.equal(d.element('resultBoxBody').textContent, 'Invalid request configuration');
+  d.c.executeRestRequest = async () => ({ ok: true, status: 204, durationMs: 2, body: '' });
+  await d.element('btn-test-request').events.click();
+  assert.equal(d.element('btn-test-request').disabled, false);
+  assert.equal(d.element('testResultBox').open, false);
+  assert.equal(d.element('resultBadge').textContent, 'HTTP 204');
 });
 
 test('Overlay default height is compact 100px and error defaults to retry prompt', () => {
@@ -667,6 +713,84 @@ test('Overlay shows sending feedback banner on delay greater than 800ms', () => 
   u.runTimers(800);
   assert.equal(u.element('hudStatusBanner').style.display, 'flex');
   assert.equal(u.element('hudStatusText').textContent, 'Отправка...');
+});
+
+test('Automatic overlay height survives resize events and still saves manual moves and resizes', () => {
+  const u = uiContext('quicktype-overlay/overlay.js');
+  const win = { id: 'overlay', left: 30, top: 40, width: 640, height: 100 };
+  u.c.overwolf.windows.getCurrentWindow = cb => cb({ success: true, window: { ...win } });
+  u.c.overwolf.windows.changeSize = (id, width, height, cb) => {
+    Object.assign(win, { width, height });
+    u.windowEvents.resize(); cb({ success: true });
+  };
+  const input = u.element('inputText');
+  input.value = 'one\ntwo'; input.events.input(); u.runTimers(500);
+  assert.equal(win.height, 126);
+  assert.equal(u.c.loadOverlayConfig().overlayBounds, null);
+  input.value += '\nthree'; input.events.input(); u.runTimers(500);
+  assert.equal(win.height, 152);
+  input.value = ''; input.events.input(); u.runTimers(500);
+  assert.equal(win.height, 100);
+  win.left = 70;
+  u.element('hudDrag').events.mousedown({ button: 0, preventDefault() {} }); u.runTimers(500);
+  assert.equal(u.c.loadOverlayConfig().overlayBounds.left, 70);
+  win.height = 190;
+  u.element('hudResizeGrip').events.mousedown({ button: 0, preventDefault() {}, stopPropagation() {} });
+  assert.equal(u.c.loadOverlayConfig().overlayBounds.height, 190);
+  input.value = 'one\ntwo'; input.events.input();
+  assert.equal(win.height, 190);
+});
+
+test('Cancelling native export does not write a fallback file', async () => {
+  const d = uiContext('quicktype-overlay/desktop.js', { apiUrl: 'https://api.test/speech' });
+  let writes = 0;
+  d.c.overwolf.utils = { placeOnClipboard() {}, openNativeFolderPicker(path, cb) { cb({ success: false }); } };
+  d.c.overwolf.io = { paths: { desktop: 'C:\\Desktop' }, writeFileContents() { writes++; } };
+  await d.element('btn-export-connection').events.click();
+  assert.equal(writes, 0);
+  assert.match(d.element('connection-transfer-status').textContent, /Экспорт отменён/);
+});
+
+test('Rejected clipboard write exposes exported JSON without claiming it was copied', async () => {
+  const d = uiContext('quicktype-overlay/desktop.js', { apiUrl: 'https://api.test/speech' }, {
+    navigator: { clipboard: { writeText: async () => { throw new Error('Denied'); } } }
+  });
+  d.c.overwolf.utils = { openNativeFolderPicker(path, cb) { cb({ success: false }); } };
+  d.c.overwolf.io = { writeFileContents() { assert.fail('Cancelled export wrote a file'); } };
+  await d.element('btn-export-connection').events.click();
+  assert.match(d.element('connection-transfer-status').textContent, /Не удалось скопировать/);
+  assert.doesNotMatch(d.element('connection-transfer-status').textContent, /JSON скопирован/);
+  assert.equal(d.element('connection-import').hidden, false);
+  assert.equal(JSON.parse(d.element('connectionJson').value).apiUrl, 'https://api.test/speech');
+});
+
+test('Export without a system directory never writes a relative file path', async () => {
+  const d = uiContext('quicktype-overlay/desktop.js', { apiUrl: 'https://api.test/speech' });
+  d.c.overwolf.utils = { placeOnClipboard() {} };
+  d.c.overwolf.io = { writeFileContents() { assert.fail('Export wrote to an unknown directory'); } };
+  await d.element('btn-export-connection').events.click();
+  assert.match(d.element('connection-transfer-status').textContent, /Папка для экспорта недоступна/);
+});
+
+test('Selecting an oversized import invalidates a previous pending read', () => {
+  let reader;
+  const d = uiContext('quicktype-overlay/desktop.js', {}, { FileReader: function () { reader = this; this.readAsText = () => {}; } });
+  const file = d.element('connectionFile');
+  file.files = [{ name: 'first.json', size: 20 }]; file.events.change();
+  file.files = [{ name: 'large.json', size: 1024 * 1024 + 1 }]; file.events.change();
+  reader.result = '{"apiUrl":"https://stale.test"}'; reader.onload();
+  assert.equal(d.element('connectionJson').value, '');
+  assert.match(d.element('connection-transfer-status').textContent, /слишком большой/);
+});
+
+test('Distribution file list includes every manifest icon and window resource', () => {
+  const manifest = JSON.parse(source('quicktype-overlay/manifest.json'));
+  const script = source('scripts/package-app.ps1');
+  const files = script.match(/\$files = @\(([\s\S]*?)\)/)[1];
+  for (const resource of [manifest.meta.icon, manifest.meta.launcher_icon, manifest.meta.window_icon,
+    ...Object.values(manifest.data.windows).map(w => w.file)]) {
+    assert.ok(files.includes("'" + resource + "'"), resource + ' missing from distribution');
+  }
 });
 
 

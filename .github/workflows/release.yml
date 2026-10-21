@@ -50,24 +50,7 @@ jobs:
           } else {
               $notes = "QuickType release $ver"
           }
-          $body = @(
-              "### 📦 Установка (требуется Developer Mode)",
-              "",
-              "Установка производится как распакованное расширение. На аккаунте Overwolf должен быть заранее включён **Developer Mode** после одобрения заявки Overwolf:",
-              "",
-              "1. Скачайте прикреплённый архив **QuickType-$ver.zip** и распакуйте его.",
-              "2. В клиенте Overwolf откройте **Настройки** -> **Development Options**.",
-              "3. Нажмите **Load unpacked extension** и укажите распакованную папку ``quicktype-overlay``.",
-              "",
-              "Также приложен **QuickType-$ver.opk** с файлами приложения в корне. Пакет не подписан Overwolf; его установка зависит от разрешений разработчика и политики клиента.",
-              "",
-              "---",
-              "",
-              "### Изменения в v${ver}:",
-              "",
-              $notes
-          ) -join "`r`n"
-          Set-Content -Path "release-notes.md" -Value $body -Encoding UTF8
+          Set-Content -Path "release-notes.md" -Value $notes -Encoding UTF8
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -76,7 +59,7 @@ jobs:
             dist/*.zip
             dist/*.opk
           fail_on_unmatched_files: true
-          name: QuickType ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           body_path: release-notes.md
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || startsWith(github.ref_name, 'v0.') }}
-          generate_release_notes: true
+          generate_release_notes: false

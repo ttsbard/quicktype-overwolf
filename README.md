@@ -20,7 +20,8 @@ For example, connect a text-to-speech (TTS) application to read typed phrases al
 The overlay lets you enter text without leaving the game:
 
 1. **Set up a hotkey once:**
-   Choose a hotkey in Overwolf settings (default: `Ctrl+Shift+F9`).
+   Choose a hotkey in Overwolf settings (default: `Ctrl+T`).
+   If your game uses the same combination, choose another hotkey. After updating QuickType, check the active binding in Overwolf settings and set `Ctrl+T` if you want to use the new default.
 2. **Press the hotkey while playing:**
    The game **does not pause**. A compact, dimmed input window appears over the game, with the text field already focused. Start typing immediately without clicking.
 3. **Send or dismiss:**
@@ -37,7 +38,7 @@ The overlay lets you enter text without leaving the game:
 QuickType has two visible windows. The input overlay is the main window and opens by default; settings open separately using its ⚙ button.
 
 1. **Main input window (Overlay):**
-   * Launching QuickType or clicking its icon in the Overwolf hub opens the input window. It is available on the desktop and over games; the hotkey (default: `Ctrl+Shift+F9`) shows or hides it in-game.
+   * Launching QuickType or clicking its icon in the Overwolf hub opens the input window. It is available on the desktop and over games; the hotkey (default: `Ctrl+T`) shows or hides it in-game.
    * Large text (18 px by default), configurable font family and size, and contrasting controls for dark and light backgrounds.
    * Settings automatically load installed font families when opened. This requires Local Font Access API support and permission in the browser engine; if first access requires a click, opening the font list retries the request. If unavailable or denied, the built-in list remains available. A selected system font is previewed immediately and saved with Save; it remains selected after reopening settings.
    * A compact initial height of 100 px for short messages, with automatic height adjustment for multiline text.
@@ -136,7 +137,7 @@ Instructions: [Getting Developer Mode in Overwolf](./docs/en/user/developer-mode
    * Click Save («Сохранить») so the overlay uses this connection.
 4. **Use it in-game:**
    * Launch a game.
-   * Press `Ctrl+Shift+F9` (you can change this in Overwolf hotkey settings).
+   * Press `Ctrl+T` (you can change this in Overwolf hotkey settings).
    * Type your text and press **Enter**, or **Shift+Enter** for a line break. By default, the window closes after a successful HTTP 2xx response. If sending fails, resolve the issue and retry.
 
 ### Integration and request configuration
@@ -198,7 +199,8 @@ QuickType — внутриигровое приложение для ввода 
 Всё взаимодействие с оверлеем сделано так, чтобы не отвлекать от геймплея и не требовать сворачивания игры (Alt+Tab):
 
 1. **Один раз настраиваете горячую клавишу:**
-   В настройках Overwolf задаётся удобный хоткей вызова оверлея (по умолчанию `Ctrl+Shift+F9`).
+   В настройках Overwolf задаётся удобный хоткей вызова оверлея (по умолчанию `Ctrl+T`).
+   Если игра использует ту же комбинацию, выберите другую. После обновления QuickType проверьте текущее назначение в настройках Overwolf и задайте `Ctrl+T`, если хотите использовать новое сочетание по умолчанию.
 2. **Нажимаете хоткей прямо во время игры:**
    Игра **не ставится на паузу** — поверх игры появляется компактное аккуратно затемнённое поле ввода, и курсор клавиатуры сразу оказывается в нём. Никаких кликов мышью делать не нужно: нажали комбинацию клавиш — и сразу печатаете.
 3. **Отправка:**
@@ -215,7 +217,7 @@ QuickType — внутриигровое приложение для ввода 
 У QuickType два видимых окна. Основное окно — оверлей ввода, который открывается по умолчанию; настройки вызываются отдельно его кнопкой ⚙.
 
 1. **Основное окно ввода (Overlay):**
-   * При запуске QuickType и клике по его значку в хабе открывается поле ввода. Оно доступно на рабочем столе и поверх игры; горячая клавиша (по умолчанию `Ctrl+Shift+F9`) показывает или скрывает его в игре.
+   * При запуске QuickType и клике по его значку в хабе открывается поле ввода. Оно доступно на рабочем столе и поверх игры; горячая клавиша (по умолчанию `Ctrl+T`) показывает или скрывает его в игре.
    * Крупный текст (по умолчанию 18 px), выбор шрифта и размера, контрастное оформление для тёмного и светлого фона.
    * Установленные семейства шрифтов загружаются автоматически при открытии настроек. Нужны поддержка Local Font Access API движком браузера и разрешение доступа; если первый запрос требует нажатия, открытие списка шрифтов повторит запрос. Если API недоступен или доступ не предоставлен, остаётся стандартный список. Выбранный системный шрифт сразу виден в предпросмотре, сохраняется кнопкой «Сохранить» и восстанавливается при повторном открытии настроек.
    * Компактная начальная высота (100 px для коротких реплик) с автоматическим увеличением высоты при многострочном вводе.
@@ -313,7 +315,7 @@ Overwolf определяет игры и тип их графического �
    * Нажмите **«Сохранить»**, чтобы оверлей использовал это подключение.
 4. **Используйте в игре:**
    * Запустите игру.
-   * Нажмите `Ctrl+Shift+F9` (хоткей можно переназначить в настройках хоткеев Overwolf).
+   * Нажмите `Ctrl+T` (хоткей можно переназначить в настройках хоткеев Overwolf).
    * Наберите текст и нажмите **Enter** (или **Shift+Enter** для переноса строки). По умолчанию после успешного HTTP 2xx окно закроется. При ошибке исправьте причину и повторите запрос.
 
 ### Настройка интеграции и запросов

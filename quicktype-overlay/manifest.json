@@ -4,7 +4,7 @@
   "meta": {
     "name": "QuickType",
     "author": "QuickType",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "minimum-overwolf-version": "0.250.0",
     "description": "Universal in-game quick input overlay with REST API & webhook integration.",
     "dock_button_title": "QuickType",
@@ -28,7 +28,7 @@
       "toggle_input_form": {
         "title": "Toggle QuickType input overlay",
         "action-type": "custom",
-        "default": "Ctrl+Shift+F9",
+        "default": "Ctrl+T",
         "passthrough": false
       }
     },

@@ -331,28 +331,6 @@ kbd {
   cursor: nwse-resize;
 }
 
-/* Угловой маркер изменения размера окна */
-.hud-resize-grip {
-  position: absolute;
-  right: 1px;
-  bottom: 1px;
-  width: 14px;
-  height: 14px;
-  cursor: nwse-resize;
-  background: radial-gradient(circle at 11px 11px, rgba(255, 255, 255, 0.4) 1.5px, transparent 2px),
-              radial-gradient(circle at 7px 11px, rgba(255, 255, 255, 0.3) 1.5px, transparent 2px),
-              radial-gradient(circle at 11px 7px, rgba(255, 255, 255, 0.3) 1.5px, transparent 2px);
-  border-radius: 0 0 8px 0;
-  opacity: 0.6;
-  transition: opacity 0.15s;
-  z-index: 20;
-  -webkit-app-region: no-drag;
-}
-
-.hud-resize-grip:hover {
-  opacity: 1;
-}
-
 .hud-light {
   border-color: rgba(0, 0, 0, 0.18);
 }

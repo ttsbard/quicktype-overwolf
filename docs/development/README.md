@@ -2,6 +2,8 @@
 
 ## Структура
 
+Документацию Overwolf можно искать через официальный [Overwolf Docs MCP](./overwolf-docs-mcp.md): доступ проверен реальным запросом, описаны подключение, Native-фильтр и прямой JSON-RPC доступ.
+
 - `quicktype-overlay/` — манифест, HTML/JS/CSS и иконка unpacked-приложения.
 - `scripts/` — вспомогательные утилиты; `tests/` — регрессионные проверки.
 - `tools/qa-rest-server.py` — локальный приёмник текста для ручной проверки REST без TTS.

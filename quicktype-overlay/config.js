@@ -3,7 +3,7 @@
  */
 var CONFIG_KEY = 'quicktype_overlay_config';
 var BOUNDS_KEY = CONFIG_KEY + '_bounds';
-var BOUNDS_FIELDS = ['overlayBounds', 'overlayWidth', 'overlayHeight'];
+var BOUNDS_FIELDS = ['overlayBounds', 'overlayWidth', 'overlayHeight', 'overlayPlacement', 'overlayMargin'];
 var REQUEST_TIMEOUT_MS = 15000;
 var OVERLAY_APPEARANCE_FIELDS = ['overlayOpacity', 'overlayBgColor', 'showHints', 'overlayFont', 'overlayFontSize'];
 
@@ -42,6 +42,8 @@ var DEFAULT_CONFIG = {
   overlayFontSize: 18,
   showHints: true,
   overlayBounds: null,
+  overlayPlacement: 'free',
+  overlayMargin: 24,
   closeOnSubmit: true,
   clearOnSubmit: true,
   closeOnEscape: true
@@ -72,6 +74,11 @@ function normalizeFontFamily(value) {
 function getOverlayFontSize(value) {
   var size = Number(value);
   return isFinite(size) && size > 0 ? Math.max(10, Math.min(48, Math.round(size))) : DEFAULT_CONFIG.overlayFontSize;
+}
+
+function normalizeOverlayMargin(value) {
+  var margin = Number(value);
+  return isFinite(margin) ? Math.max(0, Math.min(200, Math.round(margin))) : 24;
 }
 
 function loadOverlayConfig() {

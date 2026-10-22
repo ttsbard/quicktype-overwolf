@@ -16,6 +16,7 @@
   "permissions": [
     "Hotkeys",
     "GameInfo",
+    "DesktopStreaming",
     "FileSystem",
     "Web"
   ],
@@ -49,8 +50,8 @@
           "height": 750
         },
         "min_size": {
-          "width": 600,
-          "height": 700
+          "width": 320,
+          "height": 240
         },
         "max_size": {
           "width": 600,

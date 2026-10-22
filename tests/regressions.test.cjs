@@ -13,6 +13,7 @@ function configContext(extra = {}) {
     localStorage: { getItem: k => values.get(k) || null, setItem: (k, v) => values.set(k, v) }, ...extra };
   vm.createContext(c);
   vm.runInContext(source('quicktype-overlay/config.js'), c);
+  vm.runInContext(source('quicktype-overlay/window-geometry.js'), c);
   return c;
 }
 function uiContext(file, cfg = {}, extra = {}) {
@@ -52,6 +53,319 @@ function uiContext(file, cfg = {}, extra = {}) {
     key(key) { element(file.includes('desktop') ? 'testInput' : 'inputText').events.keydown({ key, preventDefault() {}, stopPropagation() {} }); },
     runTimers(delay) { for (const [id, t] of [...timers]) if (t.delay === delay && timers.has(id)) { timers.delete(id); t.f(); } } };
 }
+
+function backgroundWindowContext() {
+  const calls = [], pending = [], timers = new Map(), held = new Set(), failures = new Set(), errors = [];
+  let nextTimer = 0, hotkey, message, nativeVisible = false;
+  const windows = {
+    onMessageReceived: { addListener(f) { message = f; } }
+  };
+  for (const name of ['obtainDeclaredWindow', 'getWindowState', 'restore', 'bringToFront',
+    'requestOverlayFocus', 'sendMessage', 'minimize']) {
+    windows[name] = (...args) => {
+      calls.push({ name, args: args.slice(0, -1) });
+      const cb = args.at(-1);
+      const respond = () => {
+        const success = !failures.has(name);
+        if (success && name === 'restore') nativeVisible = true;
+        if (success && name === 'minimize') nativeVisible = false;
+        cb({ success, error: success ? undefined : 'test rejection', window: { id: 'overlay' },
+          window_state_ex: nativeVisible ? 'normal' : 'minimized' });
+      };
+      if (held.has(name)) pending.push({ name, respond });
+      else respond();
+    };
+  }
+  const c = configContext({
+    console: { log() {}, error(...args) { errors.push(args); }, warn(...args) { errors.push(args); } },
+    setTimeout(f, delay) { const id = ++nextTimer; timers.set(id, { f, delay }); return id; },
+    clearTimeout(id) { timers.delete(id); },
+    overwolf: {
+      windows,
+      extensions: { onAppLaunchTriggered: { addListener() {} } },
+      settings: { hotkeys: { onPressed: { addListener(f) { hotkey = f; } } } }
+    }
+  });
+  vm.runInContext(source('quicktype-overlay/background.html').match(/<script>([\s\S]*?)<\/script>/)[1], c);
+  return { c, calls, pending, held, failures, errors,
+    visible: () => nativeVisible,
+    key: () => hotkey({ name: 'toggle_input_form' }),
+    hide: () => message({ id: 'hide_overlay' }),
+    flush(name) { const i = pending.findIndex(p => p.name === name); assert.notEqual(i, -1); pending.splice(i, 1)[0].respond(); },
+    runTimers(delay) { for (const [id, t] of [...timers]) if (t.delay === delay && timers.has(id)) { timers.delete(id); t.f(); } }
+  };
+}
+
+const geometry = require('../quicktype-overlay/window-geometry.js');
+function placementApi(extra = {}) {
+  const win = { id: 'overlay', monitorId: 'primary', left: 50, top: 50, width: 640, height: 100, dpiScale: 1, ...extra };
+  const calls = [];
+  const api = { windows: {
+    getCurrentWindow(cb) { cb({ success: true, window: { ...win } }); },
+    changeSize(options, cb) { calls.push(['size', options.width, options.height]); Object.assign(win, { width: options.width, height: options.height }); cb({ success: true }); },
+    changePosition(id, left, top, cb) { calls.push(['position', left, top]); Object.assign(win, { left, top }); cb({ success: true }); }
+  }, utils: { getMonitorsList(cb) { cb({ success: true, displays: [{ id: 'primary', x: 0, y: 0, width: 1920, height: 1080, dpiX: 96, is_primary: true }] }); } } };
+  return { api, win, calls };
+}
+
+test('Geometry retains negative monitor coordinates and recovers disconnected displays', () => {
+  const displays = [{ id: 'left', x: -1920, y: 0, width: 1920, height: 1080 },
+    { id: 'primary', x: 0, y: 0, width: 1920, height: 1080, is_primary: true }];
+  const saved = { left: -1600, top: 100, width: 640, height: 100 };
+  assert.equal(geometry.selectDisplay(displays, { monitorId: 'primary' }, saved).id, 'left');
+  assert.equal(geometry.selectDisplay(displays.slice(1), { monitorId: 'left' }, saved).id, 'primary');
+  const recovered = geometry.fit(saved, { scale: 1, kind: 'desktop', area: { left: 0, top: 0, width: 1920, height: 1040 } });
+  assert.equal(recovered.left, 640);
+  assert.equal(recovered.top, 470);
+});
+
+test('DPI changes retain logical saved dimensions and small areas clamp without double scaling', () => {
+  const original = { left: 10, top: 10, width: 640, height: 100, dpiScale: 1 };
+  const ctx = { scale: 1.5, kind: 'desktop', area: { left: 0, top: 0, width: 800, height: 500 } };
+  const result = geometry.fit(original, ctx);
+  assert.equal(result.width, 640); assert.equal(result.height, 100);
+  assert.deepEqual(geometry.fit(result, ctx), result);
+  const legacy = geometry.fit({ ...original, dpiScale: undefined }, ctx);
+  assert.equal(legacy.width, 640);
+});
+
+test('Bottom placement uses logical margins and follows changing height', () => {
+  const ctx = { scale: 1.5, kind: 'game', area: { left: 0, top: 0, width: 1920, height: 1080 } };
+  const first = geometry.fit({ left: 50, top: 50, width: 960, height: 150 }, ctx, { mode: 'bottom', margin: 24 });
+  const second = geometry.fit({ ...first, height: 300 }, ctx, { mode: 'bottom', margin: 24 });
+  assert.equal(first.left, 480); assert.equal(first.top, 906); assert.equal(second.top, 756);
+});
+
+test('Focused game geometry uses its client dimensions instead of desktop monitor origin', () => {
+  const p = placementApi();
+  p.api.games = { getRunningGameInfo2(cb) { cb({ success: true, gameInfo: { isRunning: true, isInFocus: true, width: 1280, height: 720 } }); } };
+  let result;
+  geometry.context(p.api, p.win, null, false, ctx => { result = ctx; });
+  assert.deepEqual(result.area, { left: 0, top: 0, width: 1280, height: 720 });
+  assert.equal(result.kind, 'game');
+  geometry.context(p.api, p.win, null, true, ctx => { result = ctx; });
+  assert.equal(result.kind, 'desktop');
+});
+
+test('Placement passes DPI-aware API positions unchanged and uses logical object size overload', () => {
+  const p = placementApi({ dpiScale: 1.5 });
+  let result;
+  geometry.create(p.api, false).place({ bounds: { left: 300, top: 150, width: 960, height: 180 } }, (r, b) => { result = { r, b }; });
+  assert.ok(result.r.success);
+  assert.deepEqual(p.calls, [['size', 960, 180], ['position', 300, 150]]);
+  assert.equal(result.b.left, 300);
+});
+
+test('Failed resize never persists geometry or dispatches a subsequent move', () => {
+  const p = placementApi();
+  p.api.windows.changeSize = (options, cb) => { cb({ success: false, error: 'denied' }); };
+  let result, bounds;
+  geometry.create(p.api, false).place({ bounds: { left: 300, top: 200, width: 800, height: 150 } }, (r, b) => { result = r; bounds = b; });
+  assert.equal(result.success, false); assert.equal(bounds, undefined); assert.deepEqual(p.calls, []);
+});
+
+test('Queued placement serializes native calls and supersedes outdated persistence', () => {
+  const p = placementApi(); let finish;
+  p.api.windows.changeSize = (options, cb) => { finish = () => { Object.assign(p.win, { width: options.width, height: options.height }); cb({ success: true }); }; };
+  const manager = geometry.create(p.api, false), replies = [];
+  manager.place({ bounds: { left: 100, top: 100, width: 800, height: 150 } }, r => replies.push(r));
+  manager.place({ bounds: { left: 400, top: 200, width: 800, height: 150 } }, r => replies.push(r));
+  finish();
+  assert.equal(replies[0].cancelled, true); assert.equal(replies[1].success, true);
+  assert.deepEqual(p.calls, [['position', 400, 200]]);
+});
+
+test('Missing geometry callbacks time out and release the placement queue', () => {
+  const c = configContext();
+  const timers = new Map(); let i = 0;
+  c.setTimeout = (f, delay) => { timers.set(++i, { f, delay }); return i; };
+  c.clearTimeout = id => timers.delete(id);
+  const p = placementApi(); p.api.windows.changeSize = () => {};
+  const replies = [], manager = c.QuickTypeWindows.create(p.api, false);
+  manager.place({ bounds: { left: 10, top: 10, width: 800, height: 150 } }, r => replies.push(r));
+  for (const t of [...timers.values()]) if (t.delay === 2000) t.f();
+  assert.match(replies[0].error, /timed out/);
+  manager.place({ bounds: { left: 20, top: 20, width: 640, height: 100 } }, r => replies.push(r));
+  assert.equal(replies[1].success, true);
+});
+
+test('Placement mode is saved explicitly and never enters portable connection profiles', () => {
+  const u = uiContext('quicktype-overlay/desktop.js');
+  u.element('overlayPlacement').value = 'bottom'; u.element('overlayMargin').value = '40';
+  u.element('overlayPlacement').events.change();
+  assert.equal(u.c.loadOverlayConfig().overlayPlacement, 'free');
+  u.element('btn-save').events.click();
+  assert.equal(u.c.loadOverlayConfig().overlayPlacement, 'bottom');
+  assert.equal(u.c.loadOverlayConfig().overlayMargin, 40);
+  const profile = JSON.parse(u.c.exportConnectionProfile({ ...u.c.loadOverlayConfig(), apiUrl: 'https://test.example/' }));
+  assert.equal(profile.overlayPlacement, undefined); assert.equal(profile.overlayMargin, undefined);
+});
+
+test('Late focus IPC cannot activate a hidden overlay or suspend a reopened one', () => {
+  let intent = { visible: true, focusAllowed: true };
+  const u = uiContext('quicktype-overlay/overlay.js');
+  u.c.overwolf.windows.getMainWindow = () => ({ getOverlayIntent: () => intent });
+  let focused = 0; u.element('inputText').focus = () => focused++;
+  intent = { visible: false, focusAllowed: false };
+  u.ipc({ id: 'overlay_hidden' }); u.ipc({ id: 'focus_input_field' }); u.runTimers(45);
+  assert.equal(focused, 0);
+  intent = { visible: true, focusAllowed: true };
+  u.ipc({ id: 'focus_input_field' });
+  u.ipc({ id: 'overlay_hidden' }); u.ipc({ id: 'suspend_focus' });
+  u.runTimers(45);
+  assert.equal(focused, 2);
+});
+
+function placedOverlay(cfg = {}, extra = {}) {
+  const p = placementApi(extra); let receive;
+  const messages = [];
+  Object.assign(p.api.windows, {
+    onMessageReceived: { addListener(f) { receive = f; } },
+    sendMessage(...args) { messages.push(args); const cb = args.at(-1); if (typeof cb === 'function') cb({ success: true }); },
+    dragMove(id, cb) { p.win.left = 300; p.win.top = 200; cb({ success: true }); },
+    dragResize(id, edge, rect, cb) { p.win.width = 800; p.win.height = 180; cb({ success: true }); }
+  });
+  const u = uiContext('quicktype-overlay/overlay.js', cfg, { overwolf: p.api });
+  return { ...u, ...p, messages, receive: message => receive(message) };
+}
+
+test('Anchored overlay follows multiline height, preserves auto sizing and detaches on manual move', () => {
+  const u = placedOverlay({ overlayPlacement: 'bottom', overlayMargin: 24 });
+  assert.equal(u.win.top, 956);
+  u.element('inputText').value = 'one\ntwo'; u.element('inputText').events.input();
+  assert.equal(u.win.height, 126); assert.equal(u.win.top, 930);
+  u.key('Escape'); u.runTimers(500);
+  assert.equal(u.c.loadOverlayConfig().overlayBounds, null);
+  u.receive({ id: 'focus_input_field' });
+  u.element('hudDrag').events.mousedown({ button: 0, preventDefault() {} });
+  assert.equal(u.c.loadOverlayConfig().overlayPlacement, 'free');
+  assert.equal(u.c.loadOverlayConfig().overlayBounds.left, 300);
+  assert.equal(u.c.loadOverlayConfig().overlayBounds.top, 200);
+  assert.ok(u.messages.some(m => m[0] === 'desktop' && m[1] === 'placement_changed'));
+});
+
+test('Failed reset retains saved geometry; successful reset centers and restores automatic sizing', () => {
+  const cfg = { overlayBounds: { left: 200, top: 100, width: 800, height: 180 }, overlayPlacement: 'free' };
+  const u = placedOverlay(cfg);
+  const move = u.api.windows.changePosition;
+  u.api.windows.changePosition = (id, x, y, cb) => cb({ success: false, error: 'denied' });
+  u.receive({ id: 'reset_bounds' });
+  assert.equal(u.c.loadOverlayConfig().overlayBounds.width, 800);
+  assert.equal(u.messages.at(-1)[2].ok, false);
+  u.api.windows.changePosition = move;
+  u.receive({ id: 'reset_bounds' });
+  assert.equal(u.win.width, 640); assert.equal(u.win.height, 100);
+  assert.equal(u.win.left, 640); assert.equal(u.win.top, 490);
+  assert.equal(u.c.loadOverlayConfig().overlayBounds, null);
+  u.element('inputText').value = 'one\ntwo'; u.element('inputText').events.input();
+  assert.equal(u.win.height, 126);
+});
+
+test('Controller exclusively owns native focus; DOM activation never requests native input', () => {
+  const u = placedOverlay(); let requests = 0;
+  u.api.windows.requestOverlayFocus = () => requests++;
+  u.receive({ id: 'focus_input_field' }); u.runTimers(15); u.runTimers(45); u.runTimers(100); u.runTimers(200);
+  assert.equal(requests, 0);
+});
+
+test('Local Escape supersedes in-flight focus IPC before the controller receives hide', () => {
+  const u = placedOverlay(); let intent = { visible: true, focusAllowed: true, generation: 1 };
+  u.api.windows.getMainWindow = () => ({ getOverlayIntent: () => intent });
+  let focused = 0; u.element('inputText').focus = () => focused++;
+  u.key('Escape');
+  u.receive({ id: 'focus_input_field', content: { generation: 1 } });
+  assert.equal(focused, 0);
+  intent = { visible: true, focusAllowed: true, generation: 3 };
+  u.receive({ id: 'focus_input_field', content: { generation: 1 } });
+  assert.equal(focused, 0);
+  u.receive({ id: 'focus_input_field', content: { generation: 3 } });
+  assert.equal(focused, 1);
+});
+
+test('Public monitor dimensions are converted once to logical API space at 150 percent', () => {
+  const p = placementApi({ dpiScale: undefined });
+  p.api.utils.getMonitorsList = cb => cb({ success: true, displays: [{ id: 'primary', x: 0, y: 0, width: 1920, height: 1080, dpiX: 144, is_primary: true }] });
+  let result;
+  geometry.context(p.api, p.win, null, false, ctx => { result = ctx; });
+  assert.deepEqual(result.area, { left: 0, top: 0, width: 1280, height: 720 });
+  assert.equal(geometry.fit(null, result, { center: true }).width, 640);
+  const u = geometry.fit({ left: 0, top: 0, width: 640, height: 100 }, result, { mode: 'bottom', margin: 24 });
+  assert.equal(u.left, 320); assert.equal(u.top, 596);
+});
+
+test('An old restore completing after hide is minimized without restarting focus', () => {
+  const b = backgroundWindowContext();
+  b.hide(); b.held.add('restore'); b.key();
+  const focusCount = b.calls.filter(c => c.name === 'requestOverlayFocus').length;
+  b.hide(); b.flush('restore'); b.runTimers(60);
+  assert.equal(b.visible(), false);
+  assert.equal(b.calls.filter(c => c.name === 'requestOverlayFocus').length, focusCount);
+});
+
+test('An old minimize completing after reopen restores the latest visible intent', () => {
+  const b = backgroundWindowContext();
+  b.held.add('minimize'); b.key(); b.key();
+  assert.equal(b.visible(), true);
+  b.held.delete('minimize'); b.flush('minimize');
+  assert.equal(b.visible(), true);
+  assert.equal(b.calls.at(-1).args[1], 'focus_input_field');
+});
+
+test('Delayed focus callbacks and fallback timers do not reactivate a dismissed overlay', () => {
+  const b = backgroundWindowContext();
+  b.hide(); b.held.add('bringToFront'); b.key();
+  const messages = b.calls.filter(c => c.name === 'sendMessage' && c.args[1] === 'focus_input_field').length;
+  b.hide(); b.runTimers(60); b.flush('bringToFront');
+  assert.equal(b.visible(), false);
+  assert.equal(b.calls.filter(c => c.name === 'sendMessage' && c.args[1] === 'focus_input_field').length, messages);
+});
+
+test('Missing window API callback times out, ignores late focus and allows another hotkey', () => {
+  const b = backgroundWindowContext();
+  b.hide(); b.held.add('requestOverlayFocus'); b.key();
+  b.runTimers(2000);
+  assert.ok(b.errors.some(e => String(e).includes('Timed out')));
+  const count = b.calls.filter(c => c.name === 'sendMessage' && c.args[1] === 'focus_input_field').length;
+  b.flush('requestOverlayFocus');
+  assert.equal(b.calls.filter(c => c.name === 'sendMessage' && c.args[1] === 'focus_input_field').length, count);
+  b.held.delete('requestOverlayFocus'); b.key(); b.key();
+  assert.equal(b.calls.at(-1).args[1], 'focus_input_field');
+});
+
+test('Restore failure and focus IPC failure do not lock subsequent window operations', () => {
+  const b = backgroundWindowContext();
+  b.hide(); b.failures.add('restore'); b.key();
+  assert.ok(b.errors.some(e => String(e).includes('restore error')));
+  b.failures.delete('restore'); b.key();
+  b.hide(); b.failures.add('sendMessage'); b.key();
+  assert.ok(b.errors.some(e => String(e).includes('sendMessage error')));
+  b.failures.delete('sendMessage'); b.key(); b.key();
+  assert.equal(b.calls.at(-1).args[1], 'focus_input_field');
+});
+
+test('Hide still minimizes after IPC rejection; unavailable game focus still permits desktop DOM focus', () => {
+  const b = backgroundWindowContext();
+  b.failures.add('sendMessage'); b.hide();
+  assert.equal(b.visible(), false);
+  b.failures.delete('sendMessage'); b.failures.add('requestOverlayFocus'); b.key();
+  assert.equal(b.calls.at(-1).args[1], 'focus_input_field');
+  assert.ok(b.errors.some(e => String(e).includes('requestOverlayFocus unavailable')));
+});
+
+test('Reopening cancels old DOM focus timers even if an already queued callback runs', () => {
+  const u = uiContext('quicktype-overlay/overlay.js');
+  const oldTimers = [...u.timers.values()].filter(t => [15, 45, 100, 200].includes(t.delay));
+  let focusCount = 0;
+  u.element('inputText').focus = () => { focusCount++; };
+  u.key('Escape'); u.ipc({ id: 'focus_input_field' });
+  const afterReopen = focusCount;
+  oldTimers.forEach(t => t.f());
+  assert.equal(focusCount, afterReopen);
+  u.runTimers(45);
+  assert.equal(focusCount, afterReopen + 1);
+  u.key('Escape'); u.runTimers(100);
+  assert.equal(focusCount, afterReopen + 1);
+});
 
 for (const text of ['$&', "$'", '$`', '$$', 'a"\\\nb', 'Привет 👋']) {
   test('JSON template preserves ' + JSON.stringify(text), async () => {
@@ -196,7 +510,7 @@ test('GamesList rejects duplicates and validates XML without touching installed 
   if (process.platform === 'win32') { validateXml('<Games><GameInfo><ID>1</ID></GameInfo></Games>'); assert.throws(() => validateXml('<Games>')); }
 });
 test('Sources parse; manifest and HTML resource references exist; Markdown links resolve', () => {
-  for (const f of ['config.js', 'desktop.js', 'overlay.js']) new vm.Script(source('quicktype-overlay/' + f));
+  for (const f of ['config.js', 'window-geometry.js', 'desktop.js', 'overlay.js']) new vm.Script(source('quicktype-overlay/' + f));
   const manifest = JSON.parse(source('quicktype-overlay/manifest.json'));
   assert.equal(manifest.data.start_window, 'background'); assert.ok(manifest.permissions.includes('Web'));
   assert.ok(manifest.data.hotkeys[manifest.data.windows.overlay.focus_game_takeover_release_hotkey]);
@@ -261,9 +575,9 @@ test('Startup and hub launch open input; settings remain reachable without losin
       onMessageReceived: { addListener(f) { message = f; } },
       obtainDeclaredWindow(name, cb) { cb({ success: true, window: { id: name } }); },
       restore(id, cb) { restored.push(id); cb({ success: true }); },
-      bringToFront(id, focus, cb) { cb(); },
+      bringToFront(id, focus, cb) { cb({ success: true }); },
       requestOverlayFocus(id, cb) { focused.push(id); cb({ success: true }); },
-      sendMessage() {}
+      sendMessage(id, name, content, cb) { cb({ success: true }); }
     }
   } });
   vm.runInContext(source('quicktype-overlay/background.html').match(/<script>([\s\S]*?)<\/script>/)[1], c);

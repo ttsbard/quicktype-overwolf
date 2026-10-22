@@ -6,4 +6,6 @@
 
 ## Решения
 
+- [ADR 002: Управление окнами и оценка ODK](./002-window-management-odk.md) — `accepted` (2026-10-23)
+
 - [ADR 001: Двухоконная архитектура универсального REST API оверлея](./001-two-window-rest-overlay-architecture.md) — `accepted` (2026-10-10)

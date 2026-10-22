@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Guard overlay window callbacks and focus retry timers against superseded open/hide operations. Add window-operation timeouts and API error handling; reapply the latest visibility intent when an older native operation completes late. In-game focus behavior remains pending manual validation.
+- Recover overlay/settings geometry after display and resolution changes, clamp to available bounds and preserve DPI metadata without double-scaling legacy records. Reset centers the overlay and saves geometry only after successful window operations.
+
+### Added
+- Optional Bottom center placement and configurable bottom margin in Overlay settings, applied with Save. Manual movement returns to free positioning; automatic height changes maintain the bottom margin.
+- An isolated evaluation of ODK 1.1.2. Production retains the public Native API and direct unpacked loading; no ODK dependency or build step is required.
+
+### Changed
+- Native focus is requested by the controller; input-window retries only focus the DOM field. Settings suspend overlay focus, and stale focus/hide IPC is checked against the controller's current intent.
+- Add DesktopStreaming permission for monitor geometry queries. No screen capture is performed. Allow the settings window to fit smaller working areas.
+
 ## [0.5.2] - 2026-10-23
 
 ### Changed

@@ -180,7 +180,8 @@ Adjust the overlay position and size in-game:
 * Move it by dragging the overlay's top bar.
 * Resize by dragging the edges or corners; verify this behavior manually in your game.
 * Automatic height adjustment works until manual geometry is saved. Use Reset window («Сбросить окно») to enable it again.
-* Window geometry is saved automatically, independently of network settings. Reset window («Сбросить окно») restores the default size of 640×100 and position of 100×100.
+* Window geometry is saved automatically, independently of network settings. Reset window restores 640×100 (adjusted for DPI and available space), centers the window and enables automatic height again.
+* Under Overlay → Placement, choose Free position or Bottom center and set the bottom margin (0–200 px). Click Save to apply. Bottom center follows height changes; dragging the top bar returns to Free position. The app recovers inaccessible windows after display changes.
 
 Sources are loaded directly from `quicktype-overlay/`. After editing, manually reload the extension in Development Options. Distribution archives are built only on explicit request. Checks and manual test scenarios are described in the [development documentation](./docs/development/README.md) (in Russian).
 
@@ -355,7 +356,8 @@ QuickType отправляет текст в совместимые HTTP API и 
 * Перемещение — перетаскиванием за верхнюю плашку оверлея;
 * Изменение размера — перетаскиванием за грани и углы; работу в конкретной игре необходимо проверить вручную;
 * Автоматический подбор высоты действует до сохранения ручной геометрии. Для возврата к нему нажмите **«Сбросить окно»**;
-* Геометрия окна сохраняется автоматически и независимо от сетевых настроек. Кнопка **«Сбросить окно»** возвращает размер по умолчанию 640×100 и координаты 100×100.
+* Геометрия окна сохраняется автоматически и независимо от сетевых настроек. **Reset window** возвращает размер 640×100 с учётом DPI и доступной области, центрирует окно и снова включает автоматическую высоту.
+* Во вкладке Overlay → Placement доступны Free position и Bottom center с отступом снизу 0–200 px. Применение — кнопкой Save. Привязка следует за изменением высоты; перетаскивание верхней панели возвращает свободное размещение. После смены экранов недоступное окно возвращается в видимую область.
 
 Исходники загружаются напрямую из `quicktype-overlay/`. После правок выполните ручной Reload в Development Options. Архив создаётся только по отдельному запросу. Проверки и ручные сценарии описаны в [документации разработки](./docs/development/README.md).
 

@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', function () {
   var overlayFontSelect = document.getElementById('overlayFont');
   var overlayFontSizeInput = document.getElementById('overlayFontSize');
   var btnResetBounds = document.getElementById('btn-reset-bounds');
+  var placementSelect = document.getElementById('overlayPlacement');
+  var marginInput = document.getElementById('overlayMargin');
+  var settingsPlacement = typeof overwolf !== 'undefined' && typeof overwolf.windows.changePosition === 'function' ? QuickTypeWindows.create(overwolf, true) : null;
 
   var closeOnSubmitCheckbox = document.getElementById('closeOnSubmit');
   var clearOnSubmitCheckbox = document.getElementById('clearOnSubmit');
@@ -124,7 +127,10 @@ document.addEventListener('DOMContentLoaded', function () {
           height = Math.max(700, Math.min(750, Math.ceil(win.height + contentHeight - main.clientHeight)));
         }
         if (Math.abs(win.height - height) >= 1) {
-          overwolf.windows.changeSize(win.id, win.width, height, function () {});
+          if (settingsPlacement) settingsPlacement.place({ bounds: Object.assign({}, win, { height: height }) }, function (result) {
+            if (!result.success && !result.cancelled) console.error('[QuickType] Settings sizing:', result.error);
+          });
+          else overwolf.windows.changeSize(win.id, win.width, height, function () {});
         }
       });
     });
@@ -199,6 +205,8 @@ document.addEventListener('DOMContentLoaded', function () {
     ensureFontOption(family);
     overlayFontSelect.value = family;
     overlayFontSizeInput.value = getOverlayFontSize(cfg.overlayFontSize);
+    placementSelect.value = cfg.overlayPlacement === 'bottom' ? 'bottom' : 'free';
+    marginInput.value = normalizeOverlayMargin(cfg.overlayMargin);
 
     closeOnSubmitCheckbox.checked = cfg.closeOnSubmit !== false;
     clearOnSubmitCheckbox.checked = cfg.clearOnSubmit !== false;
@@ -216,6 +224,8 @@ document.addEventListener('DOMContentLoaded', function () {
       showHints: showHintsCheckbox.checked,
       overlayFont: overlayFontSelect.value,
       overlayFontSize: getOverlayFontSize(overlayFontSizeInput.value),
+      overlayPlacement: placementSelect.value === 'bottom' ? 'bottom' : 'free',
+      overlayMargin: normalizeOverlayMargin(marginInput.value),
       closeOnSubmit: closeOnSubmitCheckbox.checked,
       clearOnSubmit: clearOnSubmitCheckbox.checked,
       closeOnEscape: closeOnEscapeCheckbox.checked
@@ -600,12 +610,43 @@ document.addEventListener('DOMContentLoaded', function () {
   // Кнопка сброса положения и размера окна
   if (btnResetBounds) {
     btnResetBounds.addEventListener('click', function () {
-      updateOverlayConfig({ overlayBounds: null, overlayWidth: 640, overlayHeight: 100 });
-
       if (typeof overwolf !== 'undefined') {
-        overwolf.windows.sendMessage('background', 'reset_bounds', {}, function () {});
+        overwolf.windows.sendMessage('background', 'reset_bounds', {}, function (reply) {
+          if (!reply || !reply.success) showStatus('Could not request window reset.', false);
+        });
       }
-      showStatus("Window reset (640×100 by default)", true);
+      showStatus('Reset requested…', true);
+    });
+  }
+
+  [placementSelect, marginInput].forEach(function (control) {
+    control.addEventListener('change', updateSaveState);
+    control.addEventListener('input', updateSaveState);
+  });
+  if (typeof overwolf !== 'undefined' && overwolf.windows.onMessageReceived) {
+    overwolf.windows.onMessageReceived.addListener(function (message) {
+      if (message.id === 'geometry_result') {
+        showStatus(message.content.ok ? 'Window reset and centered.' : 'Could not reset window: ' + message.content.error, !!message.content.ok);
+      } else if (message.id === 'placement_changed') {
+        var saved = JSON.parse(savedForm);
+        if (readForm().overlayPlacement === saved.overlayPlacement) placementSelect.value = message.content.mode;
+        saved.overlayPlacement = message.content.mode;
+        savedForm = JSON.stringify(saved);
+        updateSaveState();
+      } else if (message.id === 'ensure_visible' && settingsPlacement) {
+        settingsPlacement.place({}, function (result) {
+          if (!result.success && !result.cancelled) console.error('[QuickType] Settings placement:', result.error);
+        });
+      }
+    });
+    if (overwolf.windows.onScreenPropertyChanged) overwolf.windows.onScreenPropertyChanged.addListener(function (event) {
+      if (!settingsPlacement) return;
+      overwolf.windows.getCurrentWindow(function (result) {
+        if (result.success && (event.id === result.window.id || event.name === 'desktop')) settingsPlacement.place({}, function () {});
+      });
+    });
+    if (settingsPlacement) settingsPlacement.place({}, function (result) {
+      if (!result.success && !result.cancelled) console.error('[QuickType] Settings placement:', result.error);
     });
   }
 

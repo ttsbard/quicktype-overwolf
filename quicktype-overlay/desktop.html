@@ -207,6 +207,18 @@
               </div>
               <button type="button" id="btn-reset-bounds" class="btn btn-ghost btn-sm">Reset window</button>
             </div>
+            <div class="form-group">
+              <label for="overlayPlacement">Placement</label>
+              <select id="overlayPlacement" class="form-select">
+                <option value="free">Free position</option>
+                <option value="bottom">Bottom center</option>
+              </select>
+              <span class="field-hint">Bottom center follows the window height. Drag the top bar to return to free positioning. Click Save to apply.</span>
+            </div>
+            <div class="form-group">
+              <label for="overlayMargin">Bottom margin (px)</label>
+              <input id="overlayMargin" class="form-input" type="number" min="0" max="200" step="1" value="24">
+            </div>
           </section>
 
           <hr class="section-divider">
@@ -330,6 +342,7 @@
 
     </div>
     <script src="config.js"></script>
+    <script src="window-geometry.js"></script>
     <script src="desktop.js"></script>
   </body>
 </html>

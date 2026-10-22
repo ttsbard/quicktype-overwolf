@@ -11,10 +11,20 @@
   var OVERLAY_WINDOW = 'overlay';
   var DESKTOP_WINDOW = 'desktop';
 
-  var switching = false;
+  var overlayOperation = null;
+  var overlayGeneration = 0;
+  var overlayWanted = true;
+  var overlayFocusAllowed = true;
+  var WINDOW_OPERATION_TIMEOUT_MS = 2000;
   var currentConfig = loadOverlayConfig();
 
   console.log('[QuickType] Controller initialized');
+
+  // Read synchronously through getMainWindow: stale focus IPC cannot override
+  // the latest intent while a hide/settings message is still being delivered.
+  function getOverlayIntent() {
+    return { visible: overlayWanted, focusAllowed: overlayFocusAllowed, generation: overlayGeneration };
+  }
 
   if (typeof overwolf !== 'undefined') {
     // 1. Обработка клика по иконке в доке Overwolf или запуска приложения
@@ -29,23 +39,18 @@
     // 2. Хоткей вызова внутриигрового оверлея
     overwolf.settings.hotkeys.onPressed.addListener(function (event) {
       if (event.name !== HOTKEY_NAME) return;
-      if (switching) return;
-      switching = true;
-      setTimeout(function () { switching = false; }, 1200);
-
-      overwolf.windows.getWindowState(OVERLAY_WINDOW, function (result) {
-        if (!result.success) {
-          switching = false;
-          console.error('[QuickType] getWindowState error:', result.error);
-          return;
-        }
-
+      // During a transition, toggle the latest intent instead of reading a
+      // partially restored native window. Every new intent cancels old callbacks.
+      if (overlayOperation) {
+        if (overlayWanted) hideOverlay();
+        else showOverlay();
+        return;
+      }
+      var operation = beginOverlayOperation(overlayWanted);
+      callOverlayApi(operation, 'getWindowState', [OVERLAY_WINDOW], function (result) {
         var isOpen = result.window_state_ex === 'normal' || result.window_state_ex === 'maximized';
-        if (isOpen) {
-          hideOverlay();
-        } else {
-          showOverlay();
-        }
+        if (isOpen) hideOverlay();
+        else showOverlay();
       });
     });
 
@@ -54,7 +59,6 @@
       if (message.id === 'open_settings') {
         openDesktopWindow();
       } else if (message.id === 'hide_overlay') {
-        switching = true;
         hideOverlay();
       } else if (message.id === 'config_updated') {
         currentConfig = loadOverlayConfig();
@@ -74,19 +78,28 @@
   }
 
   function openDesktopWindow() {
+    overlayFocusAllowed = false;
+    if (overlayOperation) finishOverlayOperation(overlayOperation);
+    overlayGeneration++;
+    withOverlayWindow(function (id) {
+      overwolf.windows.sendMessage(id, 'suspend_focus', {}, function () {});
+    });
     overwolf.windows.obtainDeclaredWindow(DESKTOP_WINDOW, function (res) {
       if (res.success) {
-        overwolf.windows.restore(res.window.id, function () {
-          overwolf.windows.bringToFront(res.window.id, true, function () {});
+        overwolf.windows.restore(res.window.id, function (reply) {
+          if (!reply || !reply.success) { console.error('[QuickType] Settings restore failed'); return; }
+          overwolf.windows.sendMessage(res.window.id, 'ensure_visible', {}, function () {});
+          overwolf.windows.bringToFront(res.window.id, true, function (front) {
+            if (!front || !front.success) console.error('[QuickType] Settings focus failed');
+          });
         });
-      }
+      } else console.error('[QuickType] Settings window unavailable:', res.error);
     });
   }
 
   function withOverlayWindow(callback) {
     overwolf.windows.obtainDeclaredWindow(OVERLAY_WINDOW, function (result) {
       if (!result.success) {
-        switching = false;
         console.error('[QuickType] obtainDeclaredWindow error:', result.error);
         return;
       }
@@ -100,43 +113,110 @@
     });
   }
 
-  function focusInputField(id) {
-    overwolf.windows.sendMessage(id, 'focus_input_field', {}, function () {});
+  function isCurrentOperation(operation) {
+    return operation.generation === overlayGeneration;
+  }
+
+  function finishOverlayOperation(operation) {
+    clearTimeout(operation.timeout);
+    clearTimeout(operation.focusTimer);
+    if (overlayOperation === operation) overlayOperation = null;
+  }
+
+  function failOverlayOperation(operation, name, error) {
+    if (!isCurrentOperation(operation)) return;
+    console.error('[QuickType] ' + name + ' error:', error || 'Unknown Overwolf error');
+    try {
+      if (overlayWanted) overwolf.windows.sendMessage(OVERLAY_WINDOW, 'window_error',
+        { error: 'Window operation failed: ' + name + '. Try the hotkey again.' }, function () {});
+    } catch (_) { /* Logging must not prevent timeout cleanup. */ }
+    finishOverlayOperation(operation);
+    // Also invalidate callbacks that arrive after the operation's deadline.
+    overlayGeneration++;
+  }
+
+  function beginOverlayOperation(visible) {
+    if (overlayOperation) finishOverlayOperation(overlayOperation);
+    overlayWanted = visible;
+    overlayFocusAllowed = visible;
+    var operation = { generation: ++overlayGeneration, timeout: null, focusTimer: null };
+    overlayOperation = operation;
+    operation.timeout = setTimeout(function () {
+      failOverlayOperation(operation, 'window operation', 'Timed out; retry using the hotkey');
+    }, WINDOW_OPERATION_TIMEOUT_MS);
+    return operation;
+  }
+
+  function callOverlayApi(operation, name, args, callback, onFailure) {
+    if (!isCurrentOperation(operation)) return;
+    var answered = false;
+    try {
+      overwolf.windows[name].apply(overwolf.windows, args.concat(function (result) {
+        if (answered) return;
+        answered = true;
+        if (!isCurrentOperation(operation)) {
+          // Native calls cannot be cancelled. If an old call actually changed
+          // visibility after a newer intent, apply that latest intent again.
+          if (result && result.success) {
+            if (name === 'minimize' && overlayWanted) showOverlay();
+            else if (!overlayWanted &&
+                ['restore', 'bringToFront', 'requestOverlayFocus'].indexOf(name) !== -1) hideOverlay();
+            else if (!overlayFocusAllowed && ['bringToFront', 'requestOverlayFocus'].indexOf(name) !== -1) openDesktopWindow();
+          }
+          return;
+        }
+        if (!result || !result.success) {
+          if (onFailure) {
+            console.warn('[QuickType] ' + name + ' unavailable:', result && result.error);
+            onFailure();
+            return;
+          }
+          failOverlayOperation(operation, name, result && result.error);
+          return;
+        }
+        callback(result);
+      }));
+    } catch (error) {
+      if (onFailure && isCurrentOperation(operation)) {
+        console.warn('[QuickType] ' + name + ' unavailable:', error.message);
+        onFailure();
+      } else {
+        failOverlayOperation(operation, name, error.message);
+      }
+    }
   }
 
   function showOverlay() {
-    withOverlayWindow(function (id) {
-      // Восстанавливаем окно
-      overwolf.windows.restore(id, function (restoreResult) {
-        if (!restoreResult.success) {
-          switching = false;
-          console.error('[QuickType] restore error:', restoreResult.error);
-          return;
-        }
-
+    var operation = beginOverlayOperation(true);
+    callOverlayApi(operation, 'obtainDeclaredWindow', [OVERLAY_WINDOW], function (result) {
+      var id = result.window.id;
+      callOverlayApi(operation, 'restore', [id], function () {
         var focusTriggered = false;
         function triggerOverlayFocus() {
-          if (focusTriggered) return;
+          if (focusTriggered || !isCurrentOperation(operation)) return;
           focusTriggered = true;
 
-          if (typeof overwolf.windows.requestOverlayFocus === 'function') {
-            overwolf.windows.requestOverlayFocus(id, function (focusResult) {
-              switching = false;
-              focusInputField(id);
+          function focusInputField() {
+            callOverlayApi(operation, 'sendMessage', [id, 'focus_input_field', { generation: operation.generation }], function () {
+              finishOverlayOperation(operation);
             });
+          }
+          if (typeof overwolf.windows.requestOverlayFocus === 'function') {
+            // This API requires an active game. A desktop rejection must not
+            // prevent DOM focus after bringToFront has already succeeded.
+            callOverlayApi(operation, 'requestOverlayFocus', [id], focusInputField, focusInputField);
           } else {
-            switching = false;
-            focusInputField(id);
+            focusInputField();
           }
         }
 
         // Переводим окно на передний план с захватом системного фокуса
         if (typeof overwolf.windows.bringToFront === 'function') {
-          overwolf.windows.bringToFront(id, true, function () {
-            triggerOverlayFocus();
-          });
+          callOverlayApi(operation, 'bringToFront', [id, true], triggerOverlayFocus);
           // Страховочный вызов фокуса на случай задержки колбэка от Overwolf
-          setTimeout(triggerOverlayFocus, 60);
+          if (isCurrentOperation(operation) && overlayOperation === operation) {
+            operation.focusTimer = setTimeout(triggerOverlayFocus, 60);
+          }
         } else {
           triggerOverlayFocus();
         }
@@ -145,11 +225,20 @@
   }
 
   function hideOverlay() {
-    withOverlayWindow(function (id) {
-      overwolf.windows.sendMessage(id, 'overlay_hidden', {}, function () {});
-      overwolf.windows.minimize(id, function (result) {
-        switching = false;
-      });
+    var operation = beginOverlayOperation(false);
+    callOverlayApi(operation, 'obtainDeclaredWindow', [OVERLAY_WINDOW], function (result) {
+      var id = result.window.id;
+      // A failed IPC must not prevent native minimize and release of input.
+      try {
+        overwolf.windows.sendMessage(id, 'overlay_hidden', {}, function (reply) {
+          if (isCurrentOperation(operation) && (!reply || !reply.success)) {
+            console.error('[QuickType] overlay_hidden IPC failed');
+          }
+        });
+      } catch (error) {
+        console.error('[QuickType] overlay_hidden IPC failed:', error.message);
+      }
+      callOverlayApi(operation, 'minimize', [id], function () { finishOverlayOperation(operation); });
     });
   }
 

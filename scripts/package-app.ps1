@@ -15,6 +15,7 @@ $files = @(
     'manifest.json',
     'background.html',
     'config.js',
+    'window-geometry.js',
     'desktop.html',
     'desktop.css',
     'desktop.js',

@@ -24,7 +24,7 @@ related_tasks: ["TASK-001"]
 
 ## Активные направления
 
-- [ROADMAP-004: Надёжное управление окнами и оценка ODK](./active/004-window-management-odk.md) — `planned`
+- [ROADMAP-004: Надёжное управление окнами и оценка ODK](./active/004-window-management-odk.md) — `in_progress`
 
 ## Завершённые направления
 

@@ -22,6 +22,7 @@ jobs:
       - name: Validate JavaScript Syntax
         run: |
           node --check quicktype-overlay/config.js
+          node --check quicktype-overlay/window-geometry.js
           node --check quicktype-overlay/desktop.js
           node --check quicktype-overlay/overlay.js
           node --check scripts/patch-overwolf-gamelist.js

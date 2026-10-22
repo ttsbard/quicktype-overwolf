@@ -31,6 +31,15 @@ document.addEventListener('DOMContentLoaded', function () {
   var sendingDelayTimer = null;
   var saveBoundsTimer = null;
   var automaticSize = null;
+  var focusGeneration = 0;
+  var focusTimers = [];
+  var placement = typeof overwolf !== 'undefined' && typeof overwolf.windows.changePosition === 'function' ? QuickTypeWindows.create(overwolf, false) : null;
+  var placementBusy = false;
+  var geometryRevision = 0;
+  var geometryTimer = null;
+  var focusSuspended = false;
+  var manualGeometry = false;
+  var locallyDismissedGeneration = null;
 
   function hexToRgba(hex, opacityPercent) {
     if (!hex) hex = '#0e0e12';
@@ -47,6 +56,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function applyConfig(cfg) {
+    var previousPlacement = config.overlayPlacement;
+    var previousMargin = config.overlayMargin;
     config = Object.assign({}, cfg || loadOverlayConfig(), previewConfig);
 
     // 1. Применяем фон и прозрачность к контейнеру
@@ -55,6 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
       inputField.style.fontFamily = getOverlayFontFamily(config.overlayFont);
       inputField.style.fontSize = getOverlayFontSize(config.overlayFontSize) + 'px';
     }
+    if (previousPlacement !== config.overlayPlacement || previousMargin !== config.overlayMargin) restoreSavedBounds();
     if (hudContainer) {
       hudContainer.style.setProperty('--hud-bg', rgba);
       var rgb = rgba.match(/[\d.]+/g);
@@ -115,15 +127,9 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function focusField() {
-    if (!inputField || activeRequest || !overlayVisible) return;
-    try {
-      window.focus();
-    } catch (_) {}
-    if (typeof overwolf !== 'undefined' && overwolf.windows && typeof overwolf.windows.requestOverlayFocus === 'function') {
-      try {
-        overwolf.windows.requestOverlayFocus('overlay', function () {});
-      } catch (_) {}
-    }
+    if (!inputField || activeRequest || !overlayVisible || focusSuspended || !controllerAllowsFocus()) return;
+    // Native focus belongs to the controller. Retries here only focus the DOM
+    // field and cannot steal input back from a hidden window or settings.
     inputField.focus();
     try {
       var len = inputField.value.length;
@@ -131,15 +137,44 @@ document.addEventListener('DOMContentLoaded', function () {
     } catch (_) {}
   }
 
+  function controllerIntent() {
+    if (typeof overwolf === 'undefined' || typeof overwolf.windows.getMainWindow !== 'function') return null;
+    try {
+      var main = overwolf.windows.getMainWindow();
+      if (main && typeof main.getOverlayIntent === 'function') {
+        return main.getOverlayIntent();
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function controllerAllowsFocus() {
+    var intent = controllerIntent();
+    return !intent || (intent.visible && intent.focusAllowed);
+  }
+
   function activateOverlay() {
+    if (!controllerAllowsFocus()) return;
+    cancelFocusRetries();
+    var generation = focusGeneration;
     overlayVisible = true;
+    focusSuspended = false;
     // Repeated focus messages must not reset pending requests or drafts.
     inputField.readOnly = !!activeRequest;
     focusField();
     autoAdjustHeight();
+    restoreSavedBounds();
     [15, 45, 100, 200].forEach(function (delay) {
-      setTimeout(function () { if (overlayVisible) focusField(); }, delay);
+      focusTimers.push(setTimeout(function () {
+        if (overlayVisible && generation === focusGeneration) focusField();
+      }, delay));
     });
+  }
+
+  function cancelFocusRetries() {
+    focusGeneration++;
+    focusTimers.forEach(clearTimeout);
+    focusTimers = [];
   }
 
   function clearActiveRequest() {
@@ -149,29 +184,38 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function dismissOverlay() {
+    cancelFocusRetries();
     overlayVisible = false;
     clearActiveRequest();
     setStatus('normal');
   }
 
-  function saveCurrentBounds(ignoreAutomaticResize) {
-    if (typeof overwolf === 'undefined' || !overwolf.windows) return;
+  function saveCurrentBounds(ignoreAutomaticResize, afterSave) {
+    if (typeof overwolf === 'undefined' || !overwolf.windows || placementBusy || manualGeometry) return;
     overwolf.windows.getCurrentWindow(function (res) {
       if (res && res.success && res.window) {
         var w = res.window;
         if (ignoreAutomaticResize && automaticSize &&
             w.width === automaticSize.width && w.height === automaticSize.height &&
             w.left === automaticSize.left && w.top === automaticSize.top) return;
-        config.overlayBounds = {
+        var bounds = {
           left: w.left,
           top: w.top,
           width: w.width,
           height: w.height
         };
-        config.overlayWidth = w.width;
-        config.overlayHeight = w.height;
-        updateOverlayConfig({ overlayBounds: config.overlayBounds,
-          overlayWidth: w.width, overlayHeight: w.height });
+        var revision = geometryRevision;
+        QuickTypeWindows.context(overwolf, w, null, false, function (ctx) {
+          if (placementBusy || revision !== geometryRevision) return;
+          bounds.dpiScale = ctx.scale;
+          bounds.context = ctx.kind;
+          bounds.coordinateSpace = 'logical';
+          config.overlayBounds = bounds;
+          config.overlayWidth = w.width;
+          config.overlayHeight = w.height;
+          updateOverlayConfig({ overlayBounds: bounds, overlayWidth: w.width, overlayHeight: w.height });
+          if (afterSave) afterSave();
+        });
       }
     });
   }
@@ -185,6 +229,12 @@ document.addEventListener('DOMContentLoaded', function () {
   if (typeof overwolf !== 'undefined') {
     overwolf.windows.onMessageReceived.addListener(function (message) {
       if (message.id === 'focus_input_field') {
+        var focusIntent = controllerIntent();
+        var messageGeneration = message.content && message.content.generation;
+        if (focusIntent && typeof messageGeneration === 'number' && messageGeneration !== focusIntent.generation) return;
+        if (focusIntent && locallyDismissedGeneration !== null &&
+            (typeof messageGeneration !== 'number' || messageGeneration <= locallyDismissedGeneration)) return;
+        locallyDismissedGeneration = null;
         activateOverlay();
       } else if (message.id === 'config_updated') {
         previewConfig = {};
@@ -193,11 +243,19 @@ document.addEventListener('DOMContentLoaded', function () {
         Object.assign(previewConfig, getOverlayAppearance(message.content || {}));
         applyConfig(loadOverlayConfig());
       } else if (message.id === 'overlay_hidden') {
-        dismissOverlay();
+        var intent = controllerIntent();
+        if (!intent || !intent.visible) dismissOverlay();
       } else if (message.id === 'rest_result') {
         handleRestResult(message.content);
       } else if (message.id === 'reset_bounds') {
         resetWindowBounds();
+      } else if (message.id === 'suspend_focus') {
+        if (!controllerAllowsFocus()) {
+          focusSuspended = true;
+          cancelFocusRetries();
+        }
+      } else if (message.id === 'window_error') {
+        setStatus('error', message.content.error);
       }
     });
 
@@ -229,7 +287,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Слушаем изменение размеров окна для автосохранения
-    window.addEventListener('resize', debouncedSaveBounds);
+    window.addEventListener('resize', function () {
+      if (placementBusy || manualGeometry) return;
+      if (config.overlayPlacement === 'bottom') scheduleGeometry();
+      else debouncedSaveBounds();
+    });
+    if (overwolf.windows.onScreenPropertyChanged) overwolf.windows.onScreenPropertyChanged.addListener(function (event) {
+      withCurrentWindowId(function (id) { if (event.id === id || event.name === 'overlay') scheduleGeometry(); });
+    });
+    if (overwolf.games && overwolf.games.onGameInfoUpdated) overwolf.games.onGameInfoUpdated.addListener(scheduleGeometry);
   }
 
   var currentWindowId = null;
@@ -266,15 +332,22 @@ document.addEventListener('DOMContentLoaded', function () {
     if (typeof overwolf === 'undefined' || !overwolf.windows) return;
     var edge = getDragEdge(edgeName);
     withCurrentWindowId(function (winId) {
+      if (placement) placement.cancel();
+      geometryRevision++;
+      placementBusy = false;
+      manualGeometry = true;
       automaticSize = null;
       // The third argument is the content rectangle, not a callback.
       var rect = { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight };
       overwolf.windows.dragResize(winId, edge, rect, function (result) {
+        manualGeometry = false;
         if (result && result.success === false) {
           setStatus('error', "Could not resize the window: " + (result.error || "Overwolf error"));
           return;
         }
-        saveCurrentBounds();
+        saveCurrentBounds(false, function () {
+          if (config.overlayPlacement === 'bottom') scheduleGeometry();
+        });
       });
     });
   }
@@ -286,7 +359,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (typeof overwolf === 'undefined' || !overwolf.windows) return;
     withCurrentWindowId(function (winId) {
-      overwolf.windows.dragMove(winId, debouncedSaveBounds);
+      if (placement) placement.cancel();
+      geometryRevision++;
+      placementBusy = false;
+      manualGeometry = true;
+      overwolf.windows.dragMove(winId, function (result) {
+        manualGeometry = false;
+        if (result && result.success === false) return;
+        config.overlayPlacement = 'free';
+        updateOverlayConfig({ overlayPlacement: 'free' });
+        overwolf.windows.sendMessage('desktop', 'placement_changed', { mode: 'free' }, function () {});
+        saveCurrentBounds();
+      });
     });
   }
 
@@ -311,6 +395,10 @@ document.addEventListener('DOMContentLoaded', function () {
         automaticSize = { width: win.width, height: win.height, left: win.left, top: win.top };
       }
       if (Math.abs(win.height - targetHeight) > 6) {
+        if (placement) {
+          placeOverlay({ bounds: Object.assign({}, win, { height: targetHeight, dpiScale: undefined }) }, true);
+          return;
+        }
         automaticSize = { width: win.width, height: targetHeight, left: win.left, top: win.top };
         overwolf.windows.changeSize(win.id, win.width, targetHeight, function () {});
       }
@@ -318,6 +406,10 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function resetWindowBounds() {
+    if (placement) {
+      placeOverlay({ bounds: null, center: true, reset: true }, true);
+      return;
+    }
     if (typeof overwolf === 'undefined' || !overwolf.windows || typeof overwolf.windows.changeSize !== 'function') return;
     overwolf.windows.getCurrentWindow(function (res) {
       if (res.success) {
@@ -362,6 +454,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Restore only valid bounds; Overwolf clamps an in-game window on restore.
   function restoreSavedBounds() {
+    if (placement) {
+      var latest = loadOverlayConfig();
+      config.overlayBounds = latest.overlayBounds;
+      config.overlayPlacement = latest.overlayPlacement;
+      config.overlayMargin = latest.overlayMargin;
+      placeOverlay({ bounds: latest.overlayBounds }, !latest.overlayBounds);
+      return;
+    }
     if (typeof overwolf === 'undefined') return;
     var bounds = config.overlayBounds;
     if (!bounds || !['left', 'top', 'width', 'height'].every(function (key) {
@@ -373,6 +473,44 @@ document.addEventListener('DOMContentLoaded', function () {
         Math.max(60, Math.min(1080, bounds.height)), function (result) {
           if (result.success) overwolf.windows.changePosition(res.window.id, bounds.left, bounds.top, function () {});
         });
+    });
+  }
+
+  function scheduleGeometry() {
+    if (manualGeometry) return;
+    if (geometryTimer) clearTimeout(geometryTimer);
+    geometryTimer = setTimeout(function () { if (overlayVisible) restoreSavedBounds(); }, 80);
+  }
+
+  function placeOverlay(options, automatic) {
+    if (!placement) return;
+    var revision = ++geometryRevision;
+    if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
+    placementBusy = true;
+    options.mode = config.overlayPlacement;
+    options.margin = normalizeOverlayMargin(config.overlayMargin);
+    if (options.reset) options.mode = 'free';
+    placement.place(options, function (result, bounds) {
+      if (revision !== geometryRevision) return;
+      placementBusy = false;
+      if (!result.success) {
+        if (!result.cancelled) setStatus('error', 'Could not position window: ' + result.error);
+      } else {
+        if (automatic) automaticSize = bounds;
+        else {
+          config.overlayBounds = bounds;
+          updateOverlayConfig({ overlayBounds: bounds, overlayWidth: bounds.width, overlayHeight: bounds.height });
+        }
+        if (options.reset) {
+          automaticSize = bounds;
+          config.overlayBounds = null;
+          config.overlayPlacement = 'free';
+          updateOverlayConfig({ overlayBounds: null, overlayWidth: bounds.width, overlayHeight: bounds.height, overlayPlacement: 'free' });
+          overwolf.windows.sendMessage('desktop', 'placement_changed', { mode: 'free' }, function () {});
+        }
+      }
+      if (options.reset && !result.cancelled) overwolf.windows.sendMessage('desktop', 'geometry_result',
+        { ok: !!result.success, error: result.error || '' }, function () {});
     });
   }
 
@@ -396,7 +534,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Первичная инициализация конфигурации и стилей
   applyConfig(config);
-  restoreSavedBounds();
   activateOverlay();
 
   // Обработка клавиатуры
@@ -463,6 +600,8 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   function hideOverlay() {
+    var intent = controllerIntent();
+    if (intent) locallyDismissedGeneration = intent.generation;
     dismissOverlay();
     if (typeof overwolf !== 'undefined') {
       debouncedSaveBounds();

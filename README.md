@@ -5,6 +5,12 @@ An in-game app for entering text and integrating with apps and services through 
 
 **[English](#english) | [На русском](#русский)**
 
+<p align="center">
+  <a href="./docs/images/ingame-input.png">
+    <img src="./docs/images/ingame-input.png" alt="QuickType text input overlay in-game / Окно ввода QuickType поверх игры" width="480">
+  </a>
+</p>
+
 ## English
 
 QuickType is an in-game app for entering text and integrating with apps and services through APIs. Type directly in-game and send your text through a configured integration without switching away from your game or getting distracted by other windows.

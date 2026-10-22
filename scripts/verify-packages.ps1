@@ -7,7 +7,7 @@ $src = Join-Path $rootDir 'quicktype-overlay'
 $manifest = Get-Content -Raw (Join-Path $src 'manifest.json') | ConvertFrom-Json
 $appId = $manifest.meta.name -replace '[^A-Za-z0-9]+', '-'
 $packageName = '{0}-{1}' -f $appId, $manifest.meta.version
-$required = @('manifest.json', $manifest.meta.icon, $manifest.meta.launcher_icon, $manifest.meta.window_icon)
+$required = @('manifest.json', $manifest.meta.icon, $manifest.meta.icon_gray, $manifest.meta.launcher_icon, $manifest.meta.window_icon)
 $required += @($manifest.data.windows.PSObject.Properties | ForEach-Object { $_.Value.file })
 $zipFiles = $null
 

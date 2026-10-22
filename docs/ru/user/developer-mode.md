@@ -10,6 +10,6 @@
 4. Нажмите Load unpacked extension и выберите `quicktype-overlay` — папку с `manifest.json`.
 5. Запустите QuickType. После изменения исходников выполняйте ручной Reload в Development Options. Параметры автообновления в манифесте предназначены только для разработки; смену манифеста проверяйте после Reload.
 
-Описание заявки можно сформулировать так: QuickType provides a hotkey-activated in-game text field that submits text to a configured REST endpoint, with desktop settings and request diagnostics. Это пример, а не требование к формулировке или языку заявки.
+Описание заявки можно сформулировать так: QuickType is an in-game app for entering text and integrating with apps and services through APIs. Users configure a compatible REST API or webhook; text-to-speech is one possible use case. Это пример, а не требование к формулировке или языку заявки.
 
 Если загрузка выдаёт Unauthorized App, проверьте вход в аккаунт и наличие developer whitelist. Текущий минимум приложения — Overwolf 0.250.0.

@@ -10,6 +10,6 @@ Your account needs developer access (whitelisting) to load and run unpublished Q
 4. Click **Load unpacked extension** and select `quicktype-overlay`, the folder containing `manifest.json`.
 5. Launch QuickType. After editing the source files, manually **Reload** the app in **Development Options**. The manifest's automatic refresh settings are for development only; check manifest changes after a Reload.
 
-Example app description: QuickType provides a hotkey-activated in-game text field that submits text to a configured REST endpoint, with desktop settings and request diagnostics. This is a suggested description, not a required wording or application language.
+Example app description: QuickType is an in-game app for entering text and integrating with apps and services through APIs. Users configure a compatible REST API or webhook; text-to-speech is one possible use case. This is a suggested description, not a required wording or application language.
 
 If loading reports **Unauthorized App**, check that you are signed in to the correct account and that developer access has been granted. The app currently requires Overwolf 0.250.0 or later.

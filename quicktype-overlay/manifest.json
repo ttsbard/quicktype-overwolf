@@ -4,11 +4,12 @@
   "meta": {
     "name": "QuickType",
     "author": "QuickType",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "minimum-overwolf-version": "0.250.0",
     "description": "Universal in-game quick input overlay with REST API & webhook integration.",
     "dock_button_title": "QuickType",
     "icon": "icon.png",
+    "icon_gray": "icon-gray.png",
     "launcher_icon": "icon.ico",
     "window_icon": "icon.png"
   },

@@ -1,13 +1,17 @@
 # QuickType (Overwolf)
 
-In-game text input with REST API and webhook integration.
-Внутриигровой ввод текста с отправкой через REST API и Webhook.
+An in-game app for entering text and integrating with apps and services through APIs.
+Внутриигровое приложение для ввода текста и интеграции с приложениями и сервисами через API.
 
 **[English](#english) | [На русском](#русский)**
 
 ## English
 
-QuickType is a universal in-game quick input overlay for Overwolf. Type over supported Overwolf games without switching windows (Alt+Tab), then send your text to external services through a REST API or webhook.
+QuickType is an in-game app for entering text and integrating with apps and services through APIs. Type directly in-game and send your text through a configured integration without switching away from your game or getting distracted by other windows.
+
+Configure integrations through REST APIs and webhooks: send messages, pass text to bots or trigger actions in compatible automation services. Customize the destination, request format and input appearance for your workflow.
+
+For example, connect a text-to-speech (TTS) application to read typed phrases aloud while gaming. This can help players who cannot use their voice. Speech synthesis and audio routing to other players depend on the chosen service and the user's setup. QuickType does not require a specific companion application.
 
 ---
 
@@ -20,7 +24,7 @@ The overlay lets you enter text without leaving the game:
 2. **Press the hotkey while playing:**
    The game **does not pause**. A compact, dimmed input window appears over the game, with the text field already focused. Start typing immediately without clicking.
 3. **Send or dismiss:**
-   * **Enter** sends the text to an external service, such as TTSBard for speech synthesis. The overlay then closes and returns control to the game.
+   * **Enter** sends the text through your configured integration. With the default settings, the window closes after a successful HTTP response and returns control to the game.
    * **Shift+Enter** inserts a line break for multiline text.
    * **Esc** closes the window if you change your mind.
 4. **If sending fails:**
@@ -73,7 +77,7 @@ In these games, the overlay may fail to capture input focus or appear until the 
 
 Resources for troubleshooting:
 
-* Game configuration patching script: [scripts/patch-overwolf-gamelist.js](./scripts/patch-overwolf-gamelist.js).
+* Manual game configuration diagnostic tool: [scripts/patch-overwolf-gamelist.js](./scripts/patch-overwolf-gamelist.js). QuickType does not run it automatically; a supported profile change should be discussed with Overwolf.
 * Detailed technical analysis (in Russian): [MixMode architecture and input capture](./docs/research/01-overwolf-engine-mixmode-analysis.md).
 
 ---
@@ -135,9 +139,13 @@ Instructions: [Getting Developer Mode in Overwolf](./docs/en/user/developer-mode
    * Press `Ctrl+Shift+F9` (you can change this in Overwolf hotkey settings).
    * Type your text and press **Enter**, or **Shift+Enter** for a line break. By default, the window closes after a successful HTTP 2xx response. If sending fails, resolve the issue and retry.
 
-### TTSBard integration and request configuration
+### Integration and request configuration
 
-The service URL is empty by default, and the default method is **POST**. For local **TTSBard**, configure:
+The service URL is empty by default, and the default method is **POST**. Choose a compatible local or remote service and configure its URL, method, headers and request body according to its API. Save the connection and test sending text before using it in-game. An HTTP 2xx response confirms that the service accepted the request; it does not confirm speech playback or delivery to other players.
+
+#### Example: TTSBard
+
+[TTSBard](https://github.com/ttsbard/TTSBard) is one optional text-to-speech integration. For a local instance, configure:
 
 * **URL:** `http://127.0.0.1:10101/v1/speech`
 * **Method:** `POST`
@@ -148,7 +156,7 @@ Save the service URL in settings and start TTSBard before sending text.
 
 #### Custom REST APIs and webhooks
 
-QuickType can connect to other external services, stream bots, or webhooks:
+QuickType can send text to compatible HTTP APIs and webhook endpoints, including bots and automation services. Match the request format and authentication to the receiving service:
 
 * **JSON:** Place the `{text}` placeholder inside a string value in the template (for example, `{"message": "{text}"}`). The text is automatically escaped as a valid JSON string.
 * **Plain text:** With `text/plain`, the `{text}` placeholder in the template is replaced without JSON escaping. Use `{text}` as the entire template to send only the message. Leading and trailing whitespace is trimmed when submitting from the overlay. The template engine does not perform form-urlencoded encoding.
@@ -169,11 +177,19 @@ Adjust the overlay position and size in-game:
 
 Sources are loaded directly from `quicktype-overlay/`. After editing, manually reload the extension in Development Options. Distribution archives are built only on explicit request. Checks and manual test scenarios are described in the [development documentation](./docs/development/README.md) (in Russian).
 
+### Support
+
+Report issues or suggest integrations through [GitHub Issues](https://github.com/ttsbard/quicktype-overwolf/issues). Include the game, display mode and steps to reproduce. Remove access tokens and other private connection details before sharing settings or logs.
+
 ---
 
 ## Русский
 
-QuickType — универсальный внутриигровой оверлей быстрого ввода для платформы Overwolf. Он позволяет набирать текст поверх поддерживаемых Overwolf игр без переключения окон (Alt-Tab) и отправлять его во внешние сервисы через REST API или Webhook.
+QuickType — внутриигровое приложение для ввода текста и интеграции с приложениями и сервисами через API. Вводите текст прямо в игре и отправляйте его через настроенную интеграцию, не отвлекаясь на другие окна и не переключаясь из игры.
+
+Настраивайте интеграции через REST API и webhooks: передавайте сообщения, отправляйте текст ботам или запускайте действия в совместимых сервисах автоматизации. Выбирайте адрес, формат запроса и внешний вид поля под свой сценарий.
+
+Например, подключите программу синтеза речи (TTS), чтобы озвучивать набранные фразы во время игры. Это может помочь игрокам, которые не могут пользоваться голосом. Озвучивание и передачу звука собеседникам обеспечивают выбранный сервис и настройки пользователя. QuickType не требует конкретного приложения-компаньона.
 
 ---
 
@@ -186,7 +202,7 @@ QuickType — универсальный внутриигровой оверле
 2. **Нажимаете хоткей прямо во время игры:**
    Игра **не ставится на паузу** — поверх игры появляется компактное аккуратно затемнённое поле ввода, и курсор клавиатуры сразу оказывается в нём. Никаких кликов мышью делать не нужно: нажали комбинацию клавиш — и сразу печатаете.
 3. **Отправка:**
-   * **Enter** — отправляет текст во внешний сервис (например, в TTSBard для озвучки), после чего оверлей сам закрывается и возвращает управление игре.
+   * **Enter** — отправляет текст через настроенную интеграцию. По умолчанию после успешного HTTP-ответа окно закрывается и возвращает управление игре.
    * **Shift+Enter** — переносит строку, если нужен многострочный текст.
    * **Esc** — мгновенно закрывает окно, если передумали писать.
 4. **Ошибка отправки:**
@@ -237,8 +253,9 @@ Overwolf определяет игры и тип их графического �
 
 В таких играх оверлей может не перехватывать фокус ввода или не отображаться, пока в конфигурации Overwolf явно не задан правильный режим работы оверлея для конкретной игры.
 
-Для решения этой проблемы:
-* Подготовлен скрипт патчинга параметров игр: [scripts/patch-overwolf-gamelist.js](./scripts/patch-overwolf-gamelist.js).
+Материалы диагностики:
+
+* Ручная диагностическая утилита настройки профиля игры: [scripts/patch-overwolf-gamelist.js](./scripts/patch-overwolf-gamelist.js). QuickType не запускает её автоматически; поддерживаемое изменение профиля следует обсудить с Overwolf.
 * Подробный технический анализ описан в документе: [Архитектурный анализ MixMode и захвата ввода](./docs/research/01-overwolf-engine-mixmode-analysis.md).
 
 ---
@@ -299,9 +316,13 @@ Overwolf определяет игры и тип их графического �
    * Нажмите `Ctrl+Shift+F9` (хоткей можно переназначить в настройках хоткеев Overwolf).
    * Наберите текст и нажмите **Enter** (или **Shift+Enter** для переноса строки). По умолчанию после успешного HTTP 2xx окно закроется. При ошибке исправьте причину и повторите запрос.
 
-### Интеграция с TTSBard и настройка запросов
+### Настройка интеграции и запросов
 
-По умолчанию адрес сервиса пустой, метод — **POST**. Для локального **TTSBard** укажите в настройках:
+По умолчанию адрес сервиса пустой, метод — **POST**. Выберите совместимый локальный или удалённый сервис и задайте адрес, метод, заголовки и тело запроса согласно его API. Сохраните подключение и проверьте отправку текста до использования в игре. HTTP 2xx подтверждает принятие запроса сервисом, но не озвучивание или доставку другим игрокам.
+
+#### Пример: TTSBard
+
+[TTSBard](https://github.com/ttsbard/TTSBard) — один из необязательных вариантов подключения синтеза речи. Для локального экземпляра укажите:
 * **URL:** `http://127.0.0.1:10101/v1/speech`
 * **Метод:** `POST`
 * **Заголовки:** `Content-Type: application/json`
@@ -309,9 +330,9 @@ Overwolf определяет игры и тип их графического �
 
 Сохраните адрес сервиса в настройках и запустите TTSBard перед отправкой текста.
 
-#### Переопределение под произвольные REST API и Webhook
+#### Настройка REST API и webhooks
 
-При необходимости QuickType можно перенастроить на любой внешний сервис, стрим-бота или webhook:
+QuickType отправляет текст в совместимые HTTP API и webhook endpoints, включая ботов и сервисы автоматизации. Формат запроса и авторизация должны соответствовать требованиям принимающего сервиса:
 * **Формат JSON:** плейсхолдер `{text}` размещается внутри строкового значения шаблона (например, `{"message": "{text}"}`) и автоматически экранируется как валидная JSON-строка.
 * **Формат Plain Text:** для `text/plain` плейсхолдер `{text}` в шаблоне заменяется текстом без JSON-экранирования. Для отправки только текста задайте шаблон `{text}`. Пробелы и пустые строки по краям сообщения удаляются перед отправкой из оверлея; кодирование `form-urlencoded` шаблонизатор не выполняет.
 * **Заголовки:** задаются JSON-объектом со строковыми значениями (например, авторизационные токены `Authorization: Bearer ...`).
@@ -326,6 +347,10 @@ Overwolf определяет игры и тип их графического �
 * Перемещение — перетаскиванием за верхнюю плашку оверлея;
 * Изменение размера — перетаскиванием за грани и углы; работу в конкретной игре необходимо проверить вручную;
 * Автоматический подбор высоты действует до сохранения ручной геометрии. Для возврата к нему нажмите **«Сбросить окно»**;
-* Геометрия окна сохраняется автоматически и независимо от сетевых настроек. Кнопка **«Сбросить окно»** возвращает дефолтный размер 640×100 и координаты 100×100.
+* Геометрия окна сохраняется автоматически и независимо от сетевых настроек. Кнопка **«Сбросить окно»** возвращает размер по умолчанию 640×100 и координаты 100×100.
 
 Исходники загружаются напрямую из `quicktype-overlay/`. После правок выполните ручной Reload в Development Options. Архив создаётся только по отдельному запросу. Проверки и ручные сценарии описаны в [документации разработки](./docs/development/README.md).
+
+### Поддержка
+
+Сообщить о проблеме или предложить интеграцию можно через [GitHub Issues](https://github.com/ttsbard/quicktype-overwolf/issues). Укажите игру, режим экрана и шаги воспроизведения. Перед публикацией настроек или логов удалите токены доступа и другие личные параметры подключения.

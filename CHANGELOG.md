@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-10-22
+
+### Added
+- A grayscale dock icon for the default state, referenced by `icon_gray` in the manifest. The icon generator now produces both colored and grayscale PNGs while preserving transparency.
+
+### Changed
+- Include the grayscale icon in distribution packages and required-resource checks.
+- Align the English and Russian README and user guides around QuickType as an in-game API integration app, with TTS as an optional use case.
+- Explain that integrations must match the receiving service's API and that HTTP success does not confirm speech playback or delivery to other players.
+- Add GitHub Issues support information and links to the TTSBard repository in the optional integration example.
+
+### Fixed
+- Correct Russian grammar and improve English wording across the README and user documentation.
+
 ## [0.4.0] - Unreleased
 
 ### Added

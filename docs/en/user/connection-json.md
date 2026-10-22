@@ -18,6 +18,10 @@ Depending on the available APIs, a file save dialog or folder picker opens. If t
 4. Check the service URL and, if needed, click **Send** in **Speech test**.
 5. Click **Save** to use the connection in-game.
 
+## Example: optional TTS integration
+
+Connections can target any compatible local or remote HTTP service. The following TTSBard configuration is one example, not a required companion application. Start the service before testing the connection. An HTTP success response confirms request acceptance, not audio playback or delivery to other players.
+
 Example connection for TTSBard ([JSON file for import](../../examples/ttsbard-connection.json)):
 
 ```json
@@ -32,6 +36,8 @@ Example connection for TTSBard ([JSON file for import](../../examples/ttsbard-co
   }
 }
 ```
+
+## Connection fields
 
 `apiUrl` is required and must start with `http://` or `https://`. Omitted fields default to POST, the `Content-Type: application/json` header, and the `{"text":"{text}"}` body. Supported methods are GET, POST, and PUT. Unknown fields are rejected, so a typo cannot silently change the connection.
 

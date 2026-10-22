@@ -1,4 +1,4 @@
-# Generates the app icon (256x256 PNG, must stay under 30KB).
+# Generates colored/grayscale app icons (256x256 PNG, each under 30KB) and launcher ICO.
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 
@@ -79,6 +79,23 @@ $textPen.Dispose()
 $g.Dispose()
 
 $bmp.Save($out, [System.Drawing.Imaging.ImageFormat]::Png)
+
+# Default dock state: preserve the artwork and alpha, convert RGB to grayscale.
+$outGray = Join-Path $rootDir 'quicktype-overlay\icon-gray.png'
+$grayBmp = New-Object System.Drawing.Bitmap (256, 256)
+$grayBmp.SetResolution(96, 96)
+try {
+    for ($y = 0; $y -lt $bmp.Height; $y++) {
+        for ($x = 0; $x -lt $bmp.Width; $x++) {
+            $pixel = $bmp.GetPixel($x, $y)
+            $level = [int][Math]::Round(0.2126 * $pixel.R + 0.7152 * $pixel.G + 0.0722 * $pixel.B)
+            $grayBmp.SetPixel($x, $y, [System.Drawing.Color]::FromArgb($pixel.A, $level, $level, $level))
+        }
+    }
+    $grayBmp.Save($outGray, [System.Drawing.Imaging.ImageFormat]::Png)
+} finally {
+    $grayBmp.Dispose()
+}
 $bmp.Dispose()
 
 # 5. Сохранение Windows icon.ico с 4 разрешениями (16, 32, 48, 256) как у официальных приложений Overwolf
@@ -134,4 +151,5 @@ $bw.Flush()
 $fs.Close()
 
 '{0} bytes -> {1}' -f (Get-Item $out).Length, $out
+'{0} bytes -> {1}' -f (Get-Item $outGray).Length, $outGray
 '{0} bytes (4 sizes: 16,32,48,256) -> {1}' -f (Get-Item $outIco).Length, $outIco

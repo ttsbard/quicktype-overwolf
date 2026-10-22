@@ -22,6 +22,7 @@ $files = @(
     'overlay.css',
     'overlay.js',
     'icon.png',
+    'icon-gray.png',
     'icon.ico'
 )
 

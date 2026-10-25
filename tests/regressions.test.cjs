@@ -87,7 +87,7 @@ function backgroundWindowContext() {
     }
   });
   vm.runInContext(source('quicktype-overlay/background.html').match(/<script>([\s\S]*?)<\/script>/)[1], c);
-  return { c, calls, pending, held, failures, errors,
+  return { c, calls, pending, held, failures, errors, timers,
     visible: () => nativeVisible,
     key: () => hotkey({ name: 'toggle_input_form' }),
     hide: () => message({ id: 'hide_overlay' }),
@@ -309,6 +309,43 @@ test('An old minimize completing after reopen restores the latest visible intent
   b.held.delete('minimize'); b.flush('minimize');
   assert.equal(b.visible(), true);
   assert.equal(b.calls.at(-1).args[1], 'focus_input_field');
+});
+
+test('Controller retries once when Exclusive Mode activates after the first successful focus reply', () => {
+  const b = backgroundWindowContext();
+  b.hide();
+  let exclusive = false, attempts = 0, delivered = 0;
+  b.c.overwolf.windows.requestOverlayFocus = (id, cb) => {
+    attempts++;
+    if (exclusive) delivered++;
+    // Native API may acknowledge the request while the injector skips it.
+    cb({ success: true });
+  };
+  b.key();
+  assert.equal(attempts, 1); assert.equal(delivered, 0);
+  exclusive = true;
+  b.runTimers(100);
+  assert.equal(attempts, 2); assert.equal(delivered, 1);
+  b.runTimers(100);
+  assert.equal(attempts, 2);
+});
+
+test('Exclusive focus recovery is cancelled on hide, settings, and superseded opens', () => {
+  for (const action of ['hide', 'settings', 'reopen']) {
+    const b = backgroundWindowContext();
+    let attempts = 0;
+    b.c.overwolf.windows.requestOverlayFocus = (id, cb) => { attempts++; cb({ success: true }); };
+    b.hide(); b.key();
+    const oldRetry = [...b.timers.values()].find(t => t.delay === 100).f;
+    if (action === 'hide') b.hide();
+    else if (action === 'settings') b.c.openDesktopWindow();
+    else { b.hide(); b.key(); }
+    const before = attempts;
+    oldRetry(); // Even a callback already queued by the runtime must be inert.
+    assert.equal(attempts, before);
+    b.runTimers(100);
+    assert.equal(attempts, before + (action === 'reopen' ? 1 : 0));
+  }
 });
 
 test('Delayed focus callbacks and fallback timers do not reactivate a dismissed overlay', () => {

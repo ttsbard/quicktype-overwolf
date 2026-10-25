@@ -120,6 +120,7 @@
   function finishOverlayOperation(operation) {
     clearTimeout(operation.timeout);
     clearTimeout(operation.focusTimer);
+    clearTimeout(operation.focusRetryTimer);
     if (overlayOperation === operation) overlayOperation = null;
   }
 
@@ -139,7 +140,7 @@
     if (overlayOperation) finishOverlayOperation(overlayOperation);
     overlayWanted = visible;
     overlayFocusAllowed = visible;
-    var operation = { generation: ++overlayGeneration, timeout: null, focusTimer: null };
+    var operation = { generation: ++overlayGeneration, timeout: null, focusTimer: null, focusRetryTimer: null };
     overlayOperation = operation;
     operation.timeout = setTimeout(function () {
       failOverlayOperation(operation, 'window operation', 'Timed out; retry using the hotkey');
@@ -196,15 +197,28 @@
           if (focusTriggered || !isCurrentOperation(operation)) return;
           focusTriggered = true;
 
-          function focusInputField() {
+          function focusInputField(afterFocus) {
             callOverlayApi(operation, 'sendMessage', [id, 'focus_input_field', { generation: operation.generation }], function () {
-              finishOverlayOperation(operation);
+              if (afterFocus) afterFocus();
+              else finishOverlayOperation(operation);
             });
           }
           if (typeof overwolf.windows.requestOverlayFocus === 'function') {
-            // This API requires an active game. A desktop rejection must not
-            // prevent DOM focus after bringToFront has already succeeded.
-            callOverlayApi(operation, 'requestOverlayFocus', [id], focusInputField, focusInputField);
+            // restore can return before ReleaseOnHidden activates Exclusive Mode.
+            // The first request may be skipped even with a successful API reply.
+            // Retry once after activation has had time to settle; never from DOM
+            // focus/input events. New visibility/settings intents cancel this timer.
+            function firstFocusComplete() {
+              focusInputField(function () {
+                operation.focusRetryTimer = setTimeout(function () {
+                  if (!isCurrentOperation(operation) || !overlayWanted || !overlayFocusAllowed) return;
+                  callOverlayApi(operation, 'requestOverlayFocus', [id],
+                    function () { focusInputField(); }, function () { focusInputField(); });
+                }, 100);
+              });
+            }
+            // Desktop rejection still permits DOM focus after bringToFront.
+            callOverlayApi(operation, 'requestOverlayFocus', [id], firstFocusComplete, firstFocusComplete);
           } else {
             focusInputField();
           }

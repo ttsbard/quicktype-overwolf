@@ -504,6 +504,18 @@ test('GamesList corrects values before ID, leaves other games alone and is idemp
   assert.equal(patchGameList(result.content, '221561').changed, false); assert.equal(patchGameList(fixture, '999').found, false);
   assert.throws(() => patchGameList(fixture, '1<'), /digits/);
 });
+test('GamesList supports XML output larger than the child process default buffer', () => {
+  const { patchGameList, validateXml } = require('../scripts/patch-overwolf-gamelist.js');
+  const padding = 'x'.repeat(2 * 1024 * 1024);
+  const fixture = '<Games><!--' + padding + '--><GameInfo><ID>221561</ID></GameInfo></Games>';
+  const result = patchGameList(fixture, '221561');
+  assert.equal(result.found, true);
+  assert.equal(result.changed, true);
+  assert.ok(result.content.includes('<!--' + padding + '-->'));
+  assert.match(result.content, /<DisableSmartMixMode>True<\/DisableSmartMixMode>/);
+  validateXml(result.content);
+});
+
 test('GamesList rejects duplicates and validates XML without touching installed cache', () => {
   const { patchGameList, validateXml } = require('../scripts/patch-overwolf-gamelist.js');
   assert.throws(() => patchGameList('<Games><GameInfo><ID>1</ID><ControlModes>A</ControlModes><ControlModes>B</ControlModes></GameInfo></Games>', '1'), /Duplicate/);

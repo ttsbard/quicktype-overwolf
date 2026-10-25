@@ -19,7 +19,9 @@ try { $doc.Load($reader) } finally { $reader.Dispose() }
 
 function runXmlScript(content, script) {
   return execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', parseXmlScript + script],
-    { input: content, encoding: 'utf8', windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    // The full GamesList is several MB; PowerShell JSON also escapes XML tags.
+    { input: content, encoding: 'utf8', windowsHide: true, maxBuffer: 128 * 1024 * 1024,
+      stdio: ['pipe', 'pipe', 'pipe'] }).trim();
 }
 
 function validateXml(content) {

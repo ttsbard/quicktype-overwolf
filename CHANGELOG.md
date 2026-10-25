@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Publish regular version tags, including v0.x, as the latest GitHub release after successful validation and packaging. Tags with prerelease suffixes remain prereleases.
+
 ## [0.6.0] - 2026-10-26
 
 ### Fixed

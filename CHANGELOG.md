@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-26
+
 ### Fixed
 - Retry overlay focus once after 100 ms to allow Exclusive Mode activation after restore. Cancel recovery on hide, settings, or a newer operation; native focus remains owned by the controller. Cult of the Lamb input requires manual in-game validation.
 - Guard overlay window callbacks and focus retry timers against superseded open/hide operations. Add window-operation timeouts and API error handling; reapply the latest visibility intent when an older native operation completes late. In-game focus behavior remains pending manual validation.
 - Recover overlay/settings geometry after display and resolution changes, clamp to available bounds and preserve DPI metadata without double-scaling legacy records. Reset centers the overlay and saves geometry only after successful window operations.
+- Allow the GamesList repair utility to process the full game database without exceeding the child-process output buffer.
 
 ### Added
 - Optional Bottom center placement and configurable bottom margin in Overlay settings, applied with Save. Manual movement returns to free positioning; automatic height changes maintain the bottom margin.

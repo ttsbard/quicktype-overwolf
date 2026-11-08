@@ -3,6 +3,13 @@
  * coordinates back unchanged; never scale these window dimensions twice.
  */
 var QuickTypeWindows = (function () {
+  // The in-game window reserves a 400x60 managed ad container below the
+  // input. 420x180 is the smallest window that keeps it unclipped while
+  // leaving the input usable. Keep these in sync with manifest.json and CSS.
+  var NORMAL_MIN_WIDTH = 420;
+  var NORMAL_MIN_HEIGHT = 180;
+  var NORMAL_DEFAULT_WIDTH = 640;
+  var NORMAL_DEFAULT_HEIGHT = 180;
   function number(value, fallback) {
     return typeof value === 'number' && isFinite(value) ? value : fallback;
   }
@@ -86,12 +93,14 @@ var QuickTypeWindows = (function () {
   function fit(bounds, ctx, options) {
     options = options || {};
     var dpi = ctx.scale || 1;
-    var rect = valid(bounds) ? Object.assign({}, bounds) : { left: 0, top: 0, width: 640, height: 100 };
+    var rect = valid(bounds) ? Object.assign({}, bounds) : {
+      left: 0, top: 0, width: NORMAL_DEFAULT_WIDTH, height: NORMAL_DEFAULT_HEIGHT
+    };
     // Existing saves came from getCurrentWindow too. Keep their API units;
     // scale metadata is diagnostic, not an instruction to multiply them again.
     var area = ctx.area;
-    var minW = options.desktopOnly ? 600 : 240;
-    var minH = options.desktopOnly ? 700 : 60;
+    var minW = options.desktopOnly ? 600 : NORMAL_MIN_WIDTH;
+    var minH = options.desktopOnly ? 700 : NORMAL_MIN_HEIGHT;
     rect.width = Math.round(Math.max(minW, Math.min(options.desktopOnly ? 600 : 1920, rect.width)));
     rect.height = Math.round(Math.max(minH, Math.min(options.desktopOnly ? 750 : 1080, rect.height)));
     if (valid(area)) {

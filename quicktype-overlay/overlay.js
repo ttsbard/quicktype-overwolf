@@ -8,6 +8,30 @@ document.addEventListener('DOMContentLoaded', function () {
   var closeOverlayButton = document.getElementById('btn-close-overlay');
   var hudFooter = document.getElementById('hudFooter');
   var settingsButton = document.getElementById('btn-open-settings');
+  var adStrip = document.getElementById('hudAd');
+  var adContainer = document.getElementById('hudAdContainer');
+  var overlayAds = null;
+  // Browser previews never request ads. Overwolf can opt into the same mock
+  // explicitly; the mock is a sibling, never SDK-owned container content.
+  var adPreview = typeof overwolf === 'undefined' ||
+    (typeof location !== 'undefined' && /(?:\?|&)ad-preview=1(?:&|$)/.test(location.search));
+  if (adPreview && adStrip && adContainer) {
+    adContainer.hidden = true;
+    adContainer.style.display = 'none';
+    var preview = document.createElement('div');
+    preview.className = 'hud-ad-preview';
+    preview.textContent = 'Advertisement preview · 400 × 60';
+    adStrip.appendChild(preview);
+  }
+
+  if (!adPreview && typeof QuickTypeAds !== 'undefined' && typeof overwolf !== 'undefined' && adStrip && adContainer) {
+    try {
+      overlayAds = QuickTypeAds.create({ container: adContainer, wrapper: adStrip });
+    } catch (error) {
+      overlayAds = null;
+      console.warn('[QuickType ads] Ad controller initialization failed.');
+    }
+  }
 
   if (settingsButton) settingsButton.addEventListener('click', function () {
     if (typeof overwolf !== 'undefined') {
@@ -159,6 +183,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var generation = focusGeneration;
     overlayVisible = true;
     focusSuspended = false;
+    if (overlayAds) overlayAds.setVisible(!document.hidden);
     // Repeated focus messages must not reset pending requests or drafts.
     inputField.readOnly = !!activeRequest;
     focusField();
@@ -186,6 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function dismissOverlay() {
     cancelFocusRetries();
     overlayVisible = false;
+    if (overlayAds) overlayAds.setVisible(false);
     clearActiveRequest();
     setStatus('normal');
   }
@@ -385,9 +411,9 @@ document.addEventListener('DOMContentLoaded', function () {
       if (text.length > 55) {
         lines = Math.max(lines, Math.ceil(text.length / 48));
       }
-      var targetHeight = 100;
+      var targetHeight = OVERLAY_BASE_HEIGHT;
       if (lines > 1) {
-        targetHeight = Math.min(240, 100 + (lines - 1) * 26);
+        targetHeight = Math.min(OVERLAY_MAX_AUTO_HEIGHT, OVERLAY_BASE_HEIGHT + (lines - 1) * OVERLAY_LINE_HEIGHT);
       }
       // Even an unchanged initial size is automatic. Closing the untouched
       // window must not persist it as a manual height and disable auto-sizing.
@@ -414,7 +440,7 @@ document.addEventListener('DOMContentLoaded', function () {
     overwolf.windows.getCurrentWindow(function (res) {
       if (res.success) {
         var defaultW = 640;
-        var defaultH = 100;
+        var defaultH = OVERLAY_BASE_HEIGHT;
         if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
         automaticSize = { width: defaultW, height: defaultH, left: 100, top: 100 };
         overwolf.windows.changeSize(res.window.id, defaultW, defaultH, function () {
@@ -469,8 +495,8 @@ document.addEventListener('DOMContentLoaded', function () {
     })) return;
     overwolf.windows.getCurrentWindow(function (res) {
       if (!res.success) return;
-      overwolf.windows.changeSize(res.window.id, Math.max(240, Math.min(1920, bounds.width)),
-        Math.max(60, Math.min(1080, bounds.height)), function (result) {
+      overwolf.windows.changeSize(res.window.id, Math.max(420, Math.min(1920, bounds.width)),
+        Math.max(OVERLAY_BASE_HEIGHT, Math.min(1080, bounds.height)), function (result) {
           if (result.success) overwolf.windows.changePosition(res.window.id, bounds.left, bounds.top, function () {});
         });
     });
@@ -519,10 +545,22 @@ document.addEventListener('DOMContentLoaded', function () {
     if (overlayVisible) focusField();
   });
   document.addEventListener('visibilitychange', function () {
+    if (overlayAds) overlayAds.setVisible(overlayVisible && !document.hidden);
     if (overlayVisible && !document.hidden) {
       focusField();
     }
   });
+
+  function shutdownOverlayAds() {
+    if (!overlayAds) return;
+    var result = overlayAds.shutdown();
+    if (result && typeof result.catch === 'function') result.catch(function () {});
+  }
+  // The window is normally minimized rather than destroyed. Shut down only
+  // when this document is actually torn down, so frequent open/close cycles
+  // do not force the SDK to start a new managed container each time.
+  window.addEventListener('pagehide', shutdownOverlayAds);
+  window.addEventListener('beforeunload', shutdownOverlayAds);
 
   // Сброс ошибки и динамическое изменение высоты при редактировании текста
   inputField.addEventListener('input', function () {

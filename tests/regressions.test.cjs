@@ -48,7 +48,7 @@ function uiContext(file, cfg = {}, extra = {}) {
   c.updateOverlayConfig(cfg);
   vm.runInContext(source(file), c);
   documentEvents.DOMContentLoaded();
-  return { c, element, messages, timers, windowEvents, dragResizes,
+  return { c, element, messages, timers, windowEvents, documentEvents, dragResizes,
     ipc: m => ipc(m),
     key(key) { element(file.includes('desktop') ? 'testInput' : 'inputText').events.keydown({ key, preventDefault() {}, stopPropagation() {} }); },
     runTimers(delay) { for (const [id, t] of [...timers]) if (t.delay === delay && timers.has(id)) { timers.delete(id); t.f(); } } };
@@ -98,7 +98,7 @@ function backgroundWindowContext() {
 
 const geometry = require('../quicktype-overlay/window-geometry.js');
 function placementApi(extra = {}) {
-  const win = { id: 'overlay', monitorId: 'primary', left: 50, top: 50, width: 640, height: 100, dpiScale: 1, ...extra };
+  const win = { id: 'overlay', monitorId: 'primary', left: 50, top: 50, width: 640, height: 180, dpiScale: 1, ...extra };
   const calls = [];
   const api = { windows: {
     getCurrentWindow(cb) { cb({ success: true, window: { ...win } }); },
@@ -116,14 +116,15 @@ test('Geometry retains negative monitor coordinates and recovers disconnected di
   assert.equal(geometry.selectDisplay(displays.slice(1), { monitorId: 'left' }, saved).id, 'primary');
   const recovered = geometry.fit(saved, { scale: 1, kind: 'desktop', area: { left: 0, top: 0, width: 1920, height: 1040 } });
   assert.equal(recovered.left, 640);
-  assert.equal(recovered.top, 470);
+  assert.equal(recovered.height, 180);
+  assert.equal(recovered.top, 430);
 });
 
 test('DPI changes retain logical saved dimensions and small areas clamp without double scaling', () => {
-  const original = { left: 10, top: 10, width: 640, height: 100, dpiScale: 1 };
+  const original = { left: 10, top: 10, width: 640, height: 180, dpiScale: 1 };
   const ctx = { scale: 1.5, kind: 'desktop', area: { left: 0, top: 0, width: 800, height: 500 } };
   const result = geometry.fit(original, ctx);
-  assert.equal(result.width, 640); assert.equal(result.height, 100);
+  assert.equal(result.width, 640); assert.equal(result.height, 180);
   assert.deepEqual(geometry.fit(result, ctx), result);
   const legacy = geometry.fit({ ...original, dpiScale: undefined }, ctx);
   assert.equal(legacy.width, 640);
@@ -131,9 +132,9 @@ test('DPI changes retain logical saved dimensions and small areas clamp without 
 
 test('Bottom placement uses logical margins and follows changing height', () => {
   const ctx = { scale: 1.5, kind: 'game', area: { left: 0, top: 0, width: 1920, height: 1080 } };
-  const first = geometry.fit({ left: 50, top: 50, width: 960, height: 150 }, ctx, { mode: 'bottom', margin: 24 });
+  const first = geometry.fit({ left: 50, top: 50, width: 960, height: 180 }, ctx, { mode: 'bottom', margin: 24 });
   const second = geometry.fit({ ...first, height: 300 }, ctx, { mode: 'bottom', margin: 24 });
-  assert.equal(first.left, 480); assert.equal(first.top, 906); assert.equal(second.top, 756);
+  assert.equal(first.left, 480); assert.equal(first.top, 876); assert.equal(second.top, 756);
 });
 
 test('Focused game geometry uses its client dimensions instead of desktop monitor origin', () => {
@@ -231,9 +232,9 @@ function placedOverlay(cfg = {}, extra = {}) {
 
 test('Anchored overlay follows multiline height, preserves auto sizing and detaches on manual move', () => {
   const u = placedOverlay({ overlayPlacement: 'bottom', overlayMargin: 24 });
-  assert.equal(u.win.top, 956);
+  assert.equal(u.win.top, 876);
   u.element('inputText').value = 'one\ntwo'; u.element('inputText').events.input();
-  assert.equal(u.win.height, 126); assert.equal(u.win.top, 930);
+  assert.equal(u.win.height, 206); assert.equal(u.win.top, 850);
   u.key('Escape'); u.runTimers(500);
   assert.equal(u.c.loadOverlayConfig().overlayBounds, null);
   u.receive({ id: 'focus_input_field' });
@@ -254,11 +255,11 @@ test('Failed reset retains saved geometry; successful reset centers and restores
   assert.equal(u.messages.at(-1)[2].ok, false);
   u.api.windows.changePosition = move;
   u.receive({ id: 'reset_bounds' });
-  assert.equal(u.win.width, 640); assert.equal(u.win.height, 100);
-  assert.equal(u.win.left, 640); assert.equal(u.win.top, 490);
+  assert.equal(u.win.width, 640); assert.equal(u.win.height, 180);
+  assert.equal(u.win.left, 640); assert.equal(u.win.top, 450);
   assert.equal(u.c.loadOverlayConfig().overlayBounds, null);
   u.element('inputText').value = 'one\ntwo'; u.element('inputText').events.input();
-  assert.equal(u.win.height, 126);
+  assert.equal(u.win.height, 206);
 });
 
 test('Controller exclusively owns native focus; DOM activation never requests native input', () => {
@@ -289,8 +290,8 @@ test('Public monitor dimensions are converted once to logical API space at 150 p
   geometry.context(p.api, p.win, null, false, ctx => { result = ctx; });
   assert.deepEqual(result.area, { left: 0, top: 0, width: 1280, height: 720 });
   assert.equal(geometry.fit(null, result, { center: true }).width, 640);
-  const u = geometry.fit({ left: 0, top: 0, width: 640, height: 100 }, result, { mode: 'bottom', margin: 24 });
-  assert.equal(u.left, 320); assert.equal(u.top, 596);
+  const u = geometry.fit({ left: 0, top: 0, width: 640, height: 180 }, result, { mode: 'bottom', margin: 24 });
+  assert.equal(u.left, 320); assert.equal(u.top, 516);
 });
 
 test('An old restore completing after hide is minimized without restarting focus', () => {
@@ -559,7 +560,7 @@ test('GamesList rejects duplicates and validates XML without touching installed 
   if (process.platform === 'win32') { validateXml('<Games><GameInfo><ID>1</ID></GameInfo></Games>'); assert.throws(() => validateXml('<Games>')); }
 });
 test('Sources parse; manifest and HTML resource references exist; Markdown links resolve', () => {
-  for (const f of ['config.js', 'window-geometry.js', 'desktop.js', 'overlay.js']) new vm.Script(source('quicktype-overlay/' + f));
+  for (const f of ['config.js', 'window-geometry.js', 'overlay-ads.js', 'desktop.js', 'overlay.js']) new vm.Script(source('quicktype-overlay/' + f));
   const manifest = JSON.parse(source('quicktype-overlay/manifest.json'));
   assert.equal(manifest.data.start_window, 'background'); assert.ok(manifest.permissions.includes('Web'));
   assert.ok(manifest.data.hotkeys[manifest.data.windows.overlay.focus_game_takeover_release_hotkey]);
@@ -1096,9 +1097,9 @@ test('Desktop configuration exception unlocks speech test and permits a successf
   assert.equal(d.element('resultBadge').textContent, 'HTTP 204');
 });
 
-test('Overlay default height is compact 100px and error defaults to retry prompt', () => {
+test('Overlay default height reserves the 400x60 ad strip and error defaults to retry prompt', () => {
   const c = configContext();
-  assert.equal(c.DEFAULT_CONFIG.overlayHeight, 100);
+  assert.equal(c.DEFAULT_CONFIG.overlayHeight, 180);
   const u = uiContext('quicktype-overlay/overlay.js');
   u.element('inputText').value = 'speak';
   u.key('Enter');
@@ -1127,12 +1128,12 @@ test('Automatic overlay height survives resize events and still saves manual mov
   };
   const input = u.element('inputText');
   input.value = 'one\ntwo'; input.events.input(); u.runTimers(500);
-  assert.equal(win.height, 126);
+  assert.equal(win.height, 206);
   assert.equal(u.c.loadOverlayConfig().overlayBounds, null);
   input.value += '\nthree'; input.events.input(); u.runTimers(500);
-  assert.equal(win.height, 152);
+  assert.equal(win.height, 232);
   input.value = ''; input.events.input(); u.runTimers(500);
-  assert.equal(win.height, 100);
+  assert.equal(win.height, 180);
   win.left = 70;
   u.element('hudDrag').events.mousedown({ button: 0, preventDefault() {} }); u.runTimers(500);
   assert.equal(u.c.loadOverlayConfig().overlayBounds.left, 70);
@@ -1157,8 +1158,60 @@ test('Closing an untouched overlay preserves automatic height after reopening', 
   receive({ id: 'focus_input_field' });
   u.element('inputText').value = 'one\ntwo';
   u.element('inputText').events.input();
-  assert.equal(win.height, 126);
+  assert.equal(win.height, 206);
 });
+
+test('Ad controller initialization failure does not prevent input or drafts', () => {
+  const u = uiContext('quicktype-overlay/overlay.js', { showHints: false }, {
+    QuickTypeAds: { create() { throw new Error('ad unavailable'); } }
+  });
+  const input = u.element('inputText');
+  input.value = 'still works';
+  assert.equal(input.value, 'still works');
+  assert.equal(u.element('hudFooter').classList.contains('hidden'), true);
+});
+
+test('Overlay owns one ad controller, hides it on close and reuses it without losing the draft', () => {
+  const visibility = [];
+  let created = null, shutdowns = 0;
+  const u = uiContext('quicktype-overlay/overlay.js', {}, {
+    QuickTypeAds: { create(options) {
+      created = options;
+      return {
+        setVisible(value) { visibility.push(value); },
+        shutdown() { shutdowns++; return Promise.resolve(); }
+      };
+    } }
+  });
+  assert.ok(created);
+  assert.equal(created.container, u.element('hudAdContainer'));
+  assert.equal(created.wrapper, u.element('hudAd'));
+  assert.deepEqual(visibility, [true]);
+
+  const input = u.element('inputText');
+  input.value = 'draft';
+  u.key('Escape');
+  assert.equal(visibility.at(-1), false);
+  assert.equal(input.value, 'draft');
+
+  let focused = 0;
+  input.focus = () => focused++;
+  u.ipc({ id: 'focus_input_field' });
+  assert.equal(visibility.at(-1), true);
+  assert.ok(focused > 0);
+  assert.equal(input.value, 'draft');
+
+  u.c.document.hidden = true;
+  u.documentEvents.visibilitychange();
+  assert.equal(visibility.at(-1), false);
+  u.c.document.hidden = false;
+  u.documentEvents.visibilitychange();
+  assert.equal(visibility.at(-1), true);
+
+  u.windowEvents.pagehide();
+  assert.equal(shutdowns, 1);
+});
+
 
 test('ICO directory points to complete PNG images with matching dimensions', () => {
   const ico = fs.readFileSync(path.join(root, 'quicktype-overlay/icon.ico'));

@@ -17,7 +17,7 @@ QuickType is an in-game app for entering text and integrating with apps and serv
 
 Configure integrations through REST APIs and webhooks: send messages, pass text to bots or trigger actions in compatible automation services. Customize the destination, request format and input appearance for your workflow.
 
-For example, connect a text-to-speech (TTS) application to read typed phrases aloud while gaming. This can help players who cannot use their voice. Speech synthesis and audio routing to other players depend on the chosen service and the user's setup. QuickType does not require a specific companion application.
+An important accessibility use case is connecting a text-to-speech (TTS) application to read typed phrases aloud while gaming. This can help players with speech disabilities, including players who cannot speak, communicate through typed text. Speech synthesis and audio routing to other players depend on the chosen service and the user's setup. QuickType does not require a specific companion application.
 
 ---
 
@@ -47,7 +47,7 @@ QuickType has two visible windows. The input overlay is the main window and open
    * Launching QuickType or clicking its icon in the Overwolf hub opens the input window. It is available on the desktop and over games; the hotkey (default: `Ctrl+T`) shows or hides it in-game.
    * Large text (18 px by default), configurable font family and size, and contrasting controls for dark and light backgrounds.
    * Settings automatically load installed font families when opened. This requires Local Font Access API support and permission in the browser engine; if first access requires a click, opening the font list retries the request. If unavailable or denied, the built-in list remains available. A selected system font is previewed immediately and saved with Save; it remains selected after reopening settings.
-   * A compact initial height of 100 px for short messages, with automatic height adjustment for multiline text.
+   * A compact initial height of 180 px for short messages, with automatic height adjustment for multiline text.
    * A single focus border without duplicate outlines.
    * Keyboard hints for Enter (send) and Esc (close).
 2. **Additional settings window (Desktop):**
@@ -57,7 +57,7 @@ QuickType has two visible windows. The input overlay is the main window and open
    * Import and export connections as JSON using file selection, drag-and-drop, or pasted text. Profiles exclude overlay appearance settings. See the [connection sharing guide](./docs/en/user/connection-json.md).
    * Configure the HTTP method (POST, GET, PUT), request body template (`{"text": "{text}"}`), and headers. The body template and headers are in the advanced request options.
    * Test speech using Send («Отправить»), with a service acceptance indicator and HTTP response details.
-   * Appearance changes immediately update the open input window. Settings include a background color palette and a geometry reset to 640×100. The desktop theme follows the system by default; the ☀/☾ button switches between light and dark and saves the choice independently of overlay appearance.
+   * Appearance changes immediately update the open input window. Settings include a background color palette and a geometry reset to 640×180. The desktop theme follows the system by default; the ☀/☾ button switches between light and dark and saves the choice independently of overlay appearance.
    * Behavior settings explain draft preservation when closing with Escape and text clearing.
 
 The manifest starts a hidden background controller (`background.html`). It opens the input overlay at startup and when QuickType is launched from the Overwolf hub, handles the toggle hotkey, and opens the settings window on the overlay's `open_settings` message. The settings window is not shown automatically.
@@ -180,7 +180,7 @@ Adjust the overlay position and size in-game:
 * Move it by dragging the overlay's top bar.
 * Resize by dragging the edges or corners; verify this behavior manually in your game.
 * Automatic height adjustment works until manual geometry is saved. Use Reset window («Сбросить окно») to enable it again.
-* Window geometry is saved automatically, independently of network settings. Reset window restores 640×100 (adjusted for DPI and available space), centers the window and enables automatic height again.
+* Window geometry is saved automatically, independently of network settings. Reset window restores 640×180 (adjusted for DPI and available space), centers the window and enables automatic height again.
 * Under Overlay → Placement, choose Free position or Bottom center and set the bottom margin (0–200 px). Click Save to apply. Bottom center follows height changes; dragging the top bar returns to Free position. The app recovers inaccessible windows after display changes.
 
 Sources are loaded directly from `quicktype-overlay/`. After editing, manually reload the extension in Development Options. Distribution archives are built only on explicit request. Checks and manual test scenarios are described in the [development documentation](./docs/development/README.md) (in Russian).
@@ -197,7 +197,7 @@ QuickType — внутриигровое приложение для ввода 
 
 Настраивайте интеграции через REST API и webhooks: передавайте сообщения, отправляйте текст ботам или запускайте действия в совместимых сервисах автоматизации. Выбирайте адрес, формат запроса и внешний вид поля под свой сценарий.
 
-Например, подключите программу синтеза речи (TTS), чтобы озвучивать набранные фразы во время игры. Это может помочь игрокам, которые не могут пользоваться голосом. Озвучивание и передачу звука собеседникам обеспечивают выбранный сервис и настройки пользователя. QuickType не требует конкретного приложения-компаньона.
+Важный сценарий доступности — подключение программы синтеза речи (TTS), чтобы озвучивать набранные фразы во время игры. Это может помочь игрокам с нарушениями речи, в том числе тем, кто не может говорить, общаться с помощью набранного текста. Озвучивание и передачу звука собеседникам обеспечивают выбранный сервис и настройки пользователя. QuickType не требует конкретного приложения-компаньона.
 
 ---
 
@@ -237,7 +237,7 @@ QuickType — внутриигровое приложение для ввода 
    * Подключение: HTTP-метод (POST, GET, PUT) и адрес сервиса; шаблон тела запроса (`{"text": "{text}"}`) и заголовки раскрываются в блоке дополнительных параметров.
    * Импорт и экспорт подключения через JSON: выбор файла, перетаскивание или вставка текста; оформление оверлея в профиль не входит. [Подробнее об обмене подключениями](./docs/ru/user/connection-json.md).
    * Проверка озвучивания: кнопка «Отправить» с индикацией «Сервис принял текст» и HTTP-ответом.
-   * Изменения оформления сразу видны в открытом окне ввода; палитра цветов фона и сброс геометрии к 640×100. Тема окна настроек по умолчанию следует системе; кнопка ☀/☾ переключает светлую и тёмную темы и сохраняет выбор независимо от оформления оверлея.
+   * Изменения оформления сразу видны в открытом окне ввода; палитра цветов фона и сброс геометрии к 640×180. Тема окна настроек по умолчанию следует системе; кнопка ☀/☾ переключает светлую и тёмную темы и сохраняет выбор независимо от оформления оверлея.
    * Понятные пояснения к параметрам поведения (сохранение черновика при закрытии по Escape и очистка).
 
 В манифесте стартовым указан скрытый фоновый контроллер (`background.html`). Он открывает оверлей ввода при запуске приложения и вызове QuickType из хаба Overwolf, обрабатывает хоткей показа/скрытия и открывает настройки по сообщению `open_settings` от оверлея. Окно настроек автоматически не показывается.
@@ -356,7 +356,7 @@ QuickType отправляет текст в совместимые HTTP API и 
 * Перемещение — перетаскиванием за верхнюю плашку оверлея;
 * Изменение размера — перетаскиванием за грани и углы; работу в конкретной игре необходимо проверить вручную;
 * Автоматический подбор высоты действует до сохранения ручной геометрии. Для возврата к нему нажмите **«Сбросить окно»**;
-* Геометрия окна сохраняется автоматически и независимо от сетевых настроек. **Reset window** возвращает размер 640×100 с учётом DPI и доступной области, центрирует окно и снова включает автоматическую высоту.
+* Геометрия окна сохраняется автоматически и независимо от сетевых настроек. **Reset window** возвращает размер 640×180 с учётом DPI и доступной области, центрирует окно и снова включает автоматическую высоту.
 * Во вкладке Overlay → Placement доступны Free position и Bottom center с отступом снизу 0–200 px. Применение — кнопкой Save. Привязка следует за изменением высоты; перетаскивание верхней панели возвращает свободное размещение. После смены экранов недоступное окно возвращается в видимую область.
 
 Исходники загружаются напрямую из `quicktype-overlay/`. После правок выполните ручной Reload в Development Options. Архив создаётся только по отдельному запросу. Проверки и ручные сценарии описаны в [документации разработки](./docs/development/README.md).

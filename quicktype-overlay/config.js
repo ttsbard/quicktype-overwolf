@@ -5,6 +5,9 @@ var CONFIG_KEY = 'quicktype_overlay_config';
 var BOUNDS_KEY = CONFIG_KEY + '_bounds';
 var BOUNDS_FIELDS = ['overlayBounds', 'overlayWidth', 'overlayHeight', 'overlayPlacement', 'overlayMargin'];
 var REQUEST_TIMEOUT_MS = 15000;
+var OVERLAY_BASE_HEIGHT = 180;
+var OVERLAY_LINE_HEIGHT = 26;
+var OVERLAY_MAX_AUTO_HEIGHT = 320;
 var OVERLAY_APPEARANCE_FIELDS = ['overlayOpacity', 'overlayBgColor', 'showHints', 'overlayFont', 'overlayFontSize'];
 
 function setText(element, text) {
@@ -35,7 +38,7 @@ var DEFAULT_CONFIG = {
     text: '{text}'
   }, null, 2),
   overlayWidth: 640,
-  overlayHeight: 100,
+  overlayHeight: 180,
   overlayOpacity: 90,
   overlayBgColor: '#0e0e12',
   overlayFont: 'default',

@@ -17,6 +17,9 @@
     "Hotkeys",
     "GameInfo",
     "DesktopStreaming",
+    "Extensions",
+    "Profile",
+    "Streaming",
     "FileSystem",
     "Web"
   ],
@@ -69,11 +72,11 @@
         "focus_game_takeover_release_hotkey": "toggle_input_form",
         "size": {
           "width": 640,
-          "height": 100
+          "height": 180
         },
         "min_size": {
-          "width": 240,
-          "height": 60
+          "width": 420,
+          "height": 180
         },
         "max_size": {
           "width": 1920,

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-11-09
+
+### Added
+- Integrate an Overwolf Native 400×60 managed advertising container below the input overlay, with a separate filled browser preview. Real ad serving and placement approval remain pending Overwolf QA.
+- Prepare accessibility-focused application text and a monetization exception request for Developer Relations.
+
+### Changed
+- Reserve advertising space with a 640×180 default overlay and a 420×180 minimum; preserve draft, focus and window visibility behavior.
+
 ### Fixed
 - Publish regular version tags, including v0.x, as the latest GitHub release after successful validation and packaging. Tags with prerelease suffixes remain prereleases.
 
